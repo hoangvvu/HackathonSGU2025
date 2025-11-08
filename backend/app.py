@@ -9,45 +9,42 @@ import pyodbc
 load_dotenv()
 
 app = Flask(__name__)
-# Đã xử lý CORS: cho phép cả localhost:3000 và 127.0.0.1:3000
+# SỬA LỖI CORS: Chỉ dùng Flask-CORS để xử lý tất cả headers
 CORS(app, resources={r"/api/*": {"origins": ["http://localhost:3000", "http://127.0.0.1:3000"]}})
-
-# Lưu ý: Hàm @app.after_request ở đầu file đã bị loại bỏ vì dùng Flask-CORS
 
 # --- CẤU HÌNH GEMINI AI ---
 API_KEY = os.getenv("GEMINI_API_KEY")
 if not API_KEY:
-    # Không cần raise, chỉ cần cảnh báo
     print("⚠️ Thiếu GEMINI_API_KEY trong file .env. Các tính năng AI sẽ không hoạt động.")
 client = genai.Client(api_key=API_KEY)
 
 
 # --- CẤU HÌNH DATABASE (SQL SERVER) ---
-# ⚠️ CẬP NHẬT 3 TRƯỜNG NÀY ĐỂ KẾT NỐI DATABASE THÀNH CÔNG ⚠️
-# SỬ DỤNG 'r' (raw string) để xử lý dấu '\'
+# SỬA LỖI DẤU BACKSLASH: Sử dụng r'' (raw string)
 DB_SERVER = r'LAPTOP-UE0L3QPE\SQLEXPRESS'
 DB_DATABASE = 'hackathon' 
 DB_USERNAME = 'sa'
 DB_PASSWORD = 'anhkhoa020305'
-# ĐÃ SỬA LỖI: Xóa dấu nháy đơn thừa ở cuối
+# SỬA LỖI NHÁY ĐƠN THỪA: Chỉ giữ 1 cặp nháy
 DB_DRIVER = '{ODBC Driver 17 for SQL Server}'
 
 CONNECTION_STRING = f"DRIVER={DB_DRIVER};SERVER={DB_SERVER};DATABASE={DB_DATABASE};UID={DB_USERNAME};PWD={DB_PASSWORD}"
 
 def get_db_conn():
-    """Hàm helper để lấy kết nối DB"""
+    """Hàm helper để lấy kết nối DB và in lỗi chi tiết"""
     try:
         conn = pyodbc.connect(CONNECTION_STRING)
         return conn
     except Exception as e:
-        # IN LỖI RÕ RÀNG HƠN
+        # THÔNG BÁO LỖI CHI TIẾT ĐỂ BẠN CHẨN ĐOÁN
         print("="*50)
-        print("❌ LỖI KẾT NỐI DATABASE SQL SERVER!")
+        print("❌ LỖI KẾT NỐI DATABASE SQL SERVER! (Kiểm tra lỗi này)")
         print(f"   Lỗi chi tiết: {e}")
-        print("   Vui lòng kiểm tra:")
-        print("   1. Đã cài đặt thư viện 'pyodbc' chưa (pip install pyodbc).")
-        print(f"   2. Chuỗi kết nối đang dùng: {CONNECTION_STRING}")
-        print("   3. Đã chạy file hackathonDB.sql để tạo database 'hackathon' chưa.")
+        print(f"   Chuỗi kết nối: {CONNECTION_STRING}")
+        print("   Vui lòng kiểm tra 3 điểm sau trên máy tính của bạn:")
+        print("   1. Dịch vụ SQL Server (SQLEXPRESS) và SQL Browser có Running không.")
+        print("   2. Tên Server 'LAPTOP-UE0L3QPE\SQLEXPRESS' có chính xác không (Thử thay bằng 127.0.0.1\SQLEXPRESS).")
+        print("   3. Tài khoản 'sa' có được kích hoạt và mật khẩu đúng không.")
         print("="*50)
         return None
 
@@ -72,14 +69,13 @@ def query_db(query, params=()):
 # --- API CHAT (Giữ nguyên) ---
 @app.route("/api/chat", methods=["POST"])
 def chat():
-    # ... (giữ nguyên logic chat) ...
+    # ... (logic chat giữ nguyên) ...
     message = request.form.get("message", "").strip()
     image = request.files.get("image")
 
     if not message and not image:
         return jsonify({"reply": "⚠️ Vui lòng nhập tin nhắn hoặc tải ảnh."})
 
-    # Nếu không có API key, không gọi AI
     if not API_KEY:
         return jsonify({"reply": "❌ Gemini API Key không khả dụng. Không thể thực hiện chức năng AI."})
 
@@ -118,17 +114,17 @@ def chat():
         return jsonify({"reply": f"❌ Lỗi server khi gọi AI: {str(e)}"})
 
 
-# --- CÁC API CHO DATABASE (Giữ nguyên) ---
+# --- CÁC API CHO DATABASE ---
 
 @app.route("/api/search-places", methods=["GET"])
 def search_places():
-    """API tìm kiếm địa điểm từ DB"""
+    """API tìm kiếm địa điểm từ DB (Đã sửa lỗi Unicode SQL)"""
     search_term = request.args.get("q", "").strip()
 
     if not search_term:
         return jsonify([])
 
-    # Tìm kiếm (LIKE) và lấy 1 ảnh thumbnail. Dùng LEFT JOIN để lấy cả những chỗ chưa có review.
+    # SỬA LỖI UNICODE: Sử dụng N'%' + ? + N'%' để hỗ trợ tiếng Việt có dấu
     query = """
     SELECT 
         p.id, 
@@ -138,46 +134,53 @@ def search_places():
         (SELECT TOP 1 i.image_url FROM Images i WHERE i.place_id = p.id) as thumbnail,
         (SELECT AVG(rating) FROM Reviews WHERE place_id = p.id) as avg_rating
     FROM Places p
-    WHERE p.name LIKE ? OR p.description LIKE ?
+    WHERE p.name LIKE N'%' + ? + N'%' OR p.description LIKE N'%' + ? + N'%'
     """
-    like_param = f"%{search_term}%"
+    like_param = search_term 
     
     places = query_db(query, (like_param, like_param))
+
+    # Xử lý thumbnail None
+    for place in places:
+        if place.get('thumbnail') is None:
+            place['thumbnail'] = 'https://via.placeholder.com/300x200?text=No+Image'
+
     return jsonify(places)
 
 
-# *** THÊM MỚI API: Lấy các địa điểm được đánh giá cao nhất ***
+# *** API: Lấy các địa điểm được đánh giá cao nhất ***
 @app.route("/api/top-rated-places", methods=["GET"])
 def get_top_rated_places():
-    """API Lấy 6 địa điểm có rating cao nhất từ DB (dành cho trang Khám phá)"""
+    """API Lấy 6 địa điểm có rating cao nhất (Đã sửa lỗi JOIN Reviews)"""
+    # SỬA LỖI: Sử dụng LEFT JOIN để lấy cả những địa điểm chưa có review
     query = """
     SELECT TOP 6
         p.id, 
         p.name, 
         p.description,
         p.address,
-        (SELECT TOP 1 i.image_url FROM Images i WHERE i.place_id = p.id) as image, -- Đổi tên thành 'image' cho khớp App.js
-        (SELECT AVG(rating) FROM Reviews WHERE place_id = p.id) as rating_score, -- Đổi tên thành 'rating_score'
-        'Database' as category, -- Dùng 'Database' thay cho category AI
-        'VR_DEMO' as vr360 -- Placeholder
+        (SELECT TOP 1 i.image_url FROM Images i WHERE i.place_id = p.id) as image,
+        AVG(r.rating) as rating_score,
+        'Database' as category,
+        'VR_DEMO' as vr360
     FROM Places p
-    JOIN Reviews r ON p.id = r.place_id
-    GROUP BY p.id, p.name, p.description, p.address
-    HAVING AVG(r.rating) >= 3 -- Chỉ lấy những nơi có rating trung bình từ 3 sao trở lên
-    ORDER BY rating_score DESC, p.id
+    LEFT JOIN Reviews r ON p.id = r.place_id
+    GROUP BY p.id, p.name, p.description, p.address, p.created_at
+    ORDER BY rating_score DESC, p.created_at DESC
     """
-    # Lưu ý: Cột AVG(rating) trong DB sẽ trả về float
+    
     places = query_db(query)
     
-    # Cần xử lý kết quả để khớp với cấu trúc `ExplorePage` đã định nghĩa
     formatted_places = []
     for place in places:
+        rating_val = place['rating_score'] if place['rating_score'] is not None else 0.0
+
         formatted_places.append({
             "id": place['id'],
             "name": place['name'],
             "description": place['description'],
             "image": place['image'] or 'https://via.placeholder.com/300x200?text=No+Image',
-            "rating": round(place['rating_score'], 1), # Làm tròn 1 chữ số thập phân
+            "rating": round(rating_val, 1),
             "category": place['category'],
             "vr360": 'https://upload.wikimedia.org/wikipedia/commons/f/f0/Halong_Bay_Vietnam_360_main_cav.jpg'
         })
@@ -204,7 +207,7 @@ def get_place_details(place_id):
         r.created_at, 
         u.name as user_name
     FROM Reviews r
-    LEFT JOIN Users u ON r.user_id = u.id -- Dùng LEFT JOIN phòng trường hợp user bị xóa
+    LEFT JOIN Users u ON r.user_id = u.id
     WHERE r.place_id = ?
     ORDER BY r.created_at DESC
     """, (place_id,))
@@ -234,6 +237,12 @@ def get_related_places():
     ORDER BY NEWID() 
     """
     places = query_db(query)
+
+    # Xử lý thumbnail None
+    for place in places:
+        if place.get('thumbnail') is None:
+            place['thumbnail'] = 'https://via.placeholder.com/300x200?text=No+Image'
+    
     return jsonify(places)
 
 
