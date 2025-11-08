@@ -5,6 +5,7 @@ cachetools==6.2.1
 certifi==2025.10.5
 charset-normalizer==3.4.4
 click==8.3.0
+colorama==0.4.6
 distro==1.9.0
 Flask==3.1.2
 flask-cors==6.0.1
@@ -24,6 +25,7 @@ pyasn1==0.6.1
 pyasn1_modules==0.4.2
 pydantic==2.12.4
 pydantic_core==2.41.5
+pyodbc==5.3.0
 python-dotenv==1.2.1
 qcos==2.3.4
 requests==2.32.5
