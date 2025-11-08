@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
-import { MapPin, Search, Globe, Camera, Star, Menu, X, Play, Navigation, MessageSquare, Paperclip, DollarSign, Cloud, Languages, Map, Compass, Sun, MapPinned, Users, ChevronsLeft, Building, Utensils, Ticket } from 'lucide-react';
+import { MapPin, Search, Globe, Camera, Star, Menu, X, Play, Navigation, MessageSquare, Paperclip, DollarSign, Cloud, Languages, Map, Compass, Sun, MapPinned, Users, ChevronsLeft, Building, Utensils, Ticket, LogIn, UserPlus, LogOut, User } from 'lucide-react';
 import 'aframe';
 
 // *** Import Leaflet và CSS ***
@@ -17,6 +17,96 @@ import ExplorePage from '../src/components/ExplorePage';
 import iconUrl from 'leaflet/dist/images/marker-icon.png';
 import iconShadowUrl from 'leaflet/dist/images/marker-shadow.png';
 
+/* === NEW: Auth Modals === */
+const LoginModal = ({ onClose, onSuccess }) => {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState("");
+
+  const submit = async () => {
+    setErr(""); setLoading(true);
+    try {
+      const res = await axios.post("http://127.0.0.1:5000/api/login", { email, password });
+      onSuccess(res.data); // {id,name,email,role}
+    } catch (e) {
+      setErr(e?.response?.data?.error || "Không thể đăng nhập.");
+    } finally { setLoading(false); }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/60 z-[200] flex items-center justify-center p-4">
+      <div className="bg-white rounded-xl w-full max-w-md overflow-hidden">
+        <div className="px-6 py-4 border-b flex items-center justify-between">
+          <h3 className="font-bold text-lg flex items-center gap-2"><LogIn className="w-5 h-5" /> Đăng nhập</h3>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700"><X className="w-5 h-5" /></button>
+        </div>
+        <div className="p-6 space-y-4">
+          {err && <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md p-2">{err}</div>}
+          <div>
+            <label className="block text-sm font-semibold mb-1">Email</label>
+            <input value={email} onChange={e=>setEmail(e.target.value)} type="email" className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-cyan-500" placeholder="you@example.com" />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold mb-1">Mật khẩu</label>
+            <input value={password} onChange={e=>setPassword(e.target.value)} type="password" className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-cyan-500" placeholder="••••••••" />
+          </div>
+          <button onClick={submit} disabled={loading} className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white py-3 rounded-lg font-semibold hover:opacity-90 disabled:opacity-50">
+            {loading ? "Đang xử lý..." : "Đăng nhập"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const RegisterModal = ({ onClose, onSuccess }) => {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState("");
+
+  const submit = async () => {
+    setErr(""); setLoading(true);
+    try {
+      const res = await axios.post("http://127.0.0.1:5000/api/register", { name, email, password });
+      onSuccess(res.data); // {id,name,email,role}
+    } catch (e) {
+      setErr(e?.response?.data?.error || "Không thể đăng ký.");
+    } finally { setLoading(false); }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/60 z-[200] flex items-center justify-center p-4">
+      <div className="bg-white rounded-xl w-full max-w-md overflow-hidden">
+        <div className="px-6 py-4 border-b flex items-center justify-between">
+          <h3 className="font-bold text-lg flex items-center gap-2"><UserPlus className="w-5 h-5" /> Đăng ký</h3>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700"><X className="w-5 h-5" /></button>
+        </div>
+        <div className="p-6 space-y-4">
+          {err && <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md p-2">{err}</div>}
+          <div>
+            <label className="block text-sm font-semibold mb-1">Họ tên</label>
+            <input value={name} onChange={e=>setName(e.target.value)} className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-cyan-500" placeholder="Nguyễn Văn A" />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold mb-1">Email</label>
+            <input value={email} onChange={e=>setEmail(e.target.value)} type="email" className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-cyan-500" placeholder="you@example.com" />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold mb-1">Mật khẩu</label>
+            <input value={password} onChange={e=>setPassword(e.target.value)} type="password" className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-cyan-500" placeholder="••••••••" />
+          </div>
+          <button onClick={submit} disabled={loading} className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white py-3 rounded-lg font-semibold hover:opacity-90 disabled:opacity-50">
+            {loading ? "Đang xử lý..." : "Tạo tài khoản"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 let DefaultIcon = L.icon({
     iconUrl: iconUrl,
     shadowUrl: iconShadowUrl,
@@ -31,16 +121,12 @@ L.Marker.prototype.options.icon = DefaultIcon;
 
 // Navigation
 // *** CẬP NHẬT: Thêm 'setSelectedPlaceId' để reset khi về home ***
-const NavBar = ({ setCurrentPage, setMobileMenuOpen, mobileMenuOpen, setSelectedPlaceId }) => {
-  
-  const goHome = () => {
-    setCurrentPage('home');
-    setSelectedPlaceId(null);
-  };
-  
+const NavBar = ({ setCurrentPage, setMobileMenuOpen, mobileMenuOpen, setSelectedPlaceId, authUser, onOpenLogin, onOpenRegister, onLogout }) => {
+  const goHome = () => { setCurrentPage('home'); setSelectedPlaceId(null); };
+
   const navigate = (page) => {
     setCurrentPage(page);
-    setSelectedPlaceId(null); // Reset ID khi chuyển trang
+    setSelectedPlaceId(null);
     setMobileMenuOpen(false);
   };
 
@@ -48,11 +134,13 @@ const NavBar = ({ setCurrentPage, setMobileMenuOpen, mobileMenuOpen, setSelected
     <nav className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-lg fixed w-full top-0 z-50">
       <div className="container mx-auto px-4 py-4">
         <div className="flex justify-between items-center">
+          {/* Left: Logo */}
           <div className="flex items-center gap-2 cursor-pointer" onClick={goHome}>
             <Globe className="w-8 h-8" />
-            <span className="text-xl font-bold hidden sm:inline">Smart Travel Hub</span>
+            <span className="text-xl font-bold hidden sm:inline">TRAVINAI</span>
           </div>
-          
+
+          {/* Center: Links (desktop) */}
           <div className="hidden md:flex gap-6">
             <button onClick={goHome} className="hover:text-yellow-200 transition">Trang chủ</button>
             <button onClick={() => navigate('explore')} className="hover:text-yellow-200 transition">Khám phá</button>
@@ -60,17 +148,69 @@ const NavBar = ({ setCurrentPage, setMobileMenuOpen, mobileMenuOpen, setSelected
             <button onClick={() => navigate('map')} className="hover:text-yellow-200 transition">Bản đồ</button>
           </div>
 
+          {/* Right: Auth buttons (desktop) */}
+          <div className="hidden md:flex items-center gap-3">
+            {!authUser ? (
+              <>
+                <button
+                  onClick={onOpenLogin}
+                  className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 transition"
+                  title="Đăng nhập"
+                >
+                  <LogIn className="w-4 h-4" /> Đăng nhập
+                </button>
+                <button
+                  onClick={onOpenRegister}
+                  className="flex items-center gap-2 px-4 py-2 rounded-full bg-yellow-400 text-gray-900 font-semibold hover:bg-yellow-300 transition"
+                  title="Đăng ký"
+                >
+                  <UserPlus className="w-4 h-4" /> Đăng ký
+                </button>
+              </>
+            ) : (
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-full">
+                  <div className="bg-white text-cyan-600 w-8 h-8 rounded-full flex items-center justify-center font-bold">
+                    {authUser.name?.[0]?.toUpperCase() || authUser.email?.[0]?.toUpperCase()}
+                  </div>
+                  <div className="text-sm">
+                    <div className="font-semibold leading-4">{authUser.name || 'Người dùng'}</div>
+                    <div className="text-white/80 text-xs leading-4">{authUser.email}</div>
+                  </div>
+                </div>
+                <button
+                  onClick={onLogout}
+                  className="flex items-center gap-2 px-3 py-2 rounded-full bg-white/10 hover:bg-white/20 transition"
+                  title="Đăng xuất"
+                >
+                  <LogOut className="w-4 h-4" /> Đăng xuất
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Mobile menu button */}
           <button className="md:hidden" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
             {mobileMenuOpen ? <X /> : <Menu />}
           </button>
         </div>
 
+        {/* Mobile dropdown */}
         {mobileMenuOpen && (
           <div className="md:hidden mt-4 space-y-2 pb-4">
             <button onClick={() => { setCurrentPage('home'); setSelectedPlaceId(null); setMobileMenuOpen(false); }} className="block w-full text-left py-2 hover:bg-cyan-600 px-2 rounded">Trang chủ</button>
             <button onClick={() => navigate('explore')} className="block w-full text-left py-2 hover:bg-cyan-600 px-2 rounded">Khám phá</button>
             <button onClick={() => navigate('tools')} className="block w-full text-left py-2 hover:bg-cyan-600 px-2 rounded">Công cụ</button>
             <button onClick={() => navigate('map')} className="block w-full text-left py-2 hover:bg-cyan-600 px-2 rounded">Bản đồ</button>
+
+            {!authUser ? (
+              <div className="pt-2 flex gap-2">
+                <button onClick={() => { setMobileMenuOpen(false); onOpenLogin(); }} className="flex-1 bg-white/10 py-2 rounded-lg flex items-center justify-center gap-2"><LogIn className="w-4 h-4" /> Đăng nhập</button>
+                <button onClick={() => { setMobileMenuOpen(false); onOpenRegister(); }} className="flex-1 bg-yellow-400 text-gray-900 py-2 rounded-lg font-semibold flex items-center justify-center gap-2"><UserPlus className="w-4 h-4" /> Đăng ký</button>
+              </div>
+            ) : (
+              <button onClick={() => { setMobileMenuOpen(false); onLogout(); }} className="w-full bg-white/10 py-2 rounded-lg flex items-center justify-center gap-2"><LogOut className="w-4 h-4" /> Đăng xuất</button>
+            )}
           </div>
         )}
       </div>
@@ -78,73 +218,105 @@ const NavBar = ({ setCurrentPage, setMobileMenuOpen, mobileMenuOpen, setSelected
   );
 };
 
+
 // Home Page
 // *** CẬP NHẬT: GỌI API /api/ai-search ***
 const HomePage = ({ setCurrentPage, setSelectedPlaceId }) => {
+  /* ---------- SEARCH STATES ---------- */
   const [searchInput, setSearchInput] = useState('');
-  const [weather, setWeather] = useState(null);
-  const [recommendations, setRecommendations] = useState([]); 
+  const [recommendations, setRecommendations] = useState([]);
   const [loading, setLoading] = useState(false);
-  
-  // Bạn nên chuyển key này vào file .env.local và dùng process.env.REACT_APP_WEATHER_API_KEY
-  const WEATHER_API_KEY = 'bdb6cd644053354271d07e32ba89b83'; 
 
-  // Lấy vị trí và thời tiết hiện tại
-  useEffect(() => {
-    getCurrentLocationWeather();
-  }, []);
-
-  const getCurrentLocationWeather = async () => {
-    try {
-      navigator.geolocation.getCurrentPosition(async (position) => {
-        const { latitude, longitude } = position.coords;
-        const weatherResponse = await axios.get(
-          `https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&appid=${WEATHER_API_KEY}&units=metric&lang=vi`
-        );
-        setWeather({
-          temp: Math.round(weatherResponse.data.main.temp),
-          description: weatherResponse.data.weather[0].description,
-          icon: weatherResponse.data.weather[0].icon,
-          city: weatherResponse.data.name
-        });
-      }, (error) => {
-         console.error('Lỗi lấy vị trí:', error);
-         // Fallback data
-         setWeather({ temp: 28, description: 'nắng đẹp', icon: '01d', city: 'Hồ Chí Minh' });
-      });
-    } catch (error) {
-      console.error('Lỗi lấy thời tiết:', error);
-      setWeather({ temp: 28, description: 'nắng đẹp', icon: '01d', city: 'Hồ Chí Minh' });
-    }
-  };
-
-  // *** 🛑 THAY ĐỔI: Tìm kiếm bằng AI (Backend Flask) 🛑 ***
-  const handleSmartSearch = async () => {
-    const query = searchInput.trim();
-    if (!query) {
-      setRecommendations([]);
-      return;
-    }
-
+  /* ---------- HÀM TÌM KIẾM DB ---------- */
+  const handleSmartSearch = useCallback(async () => {
+    const q = searchInput.trim();
+    if (!q) { setRecommendations([]); return; }
     setLoading(true);
-    setRecommendations([]); // Xóa kết quả cũ
+    setRecommendations([]);
 
     try {
-      // Gọi API /api/ai-search mới
-      const response = await axios.get('http://127.0.0.1:5000/api/ai-search', {
-        params: { q: query }
-      });
-      
-      // Lưu kết quả
-      setRecommendations(response.data || []);
-
-    } catch (error) {
-      console.error('Lỗi tìm kiếm AI:', error);
+      const { data } = await axios.get('http://127.0.0.1:5000/api/search-places', { params: { q } });
+      setRecommendations(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error('Lỗi tìm kiếm địa điểm:', err);
       setRecommendations([]);
     } finally {
       setLoading(false);
     }
+  }, [searchInput]);
+
+  /* ---------- WEATHER STATES ---------- */
+  const [weather, setWeather] = useState(null);
+  const [isDay, setIsDay] = useState(true);
+  const [sunrise, setSunrise] = useState(null);
+  const [sunset, setSunset] = useState(null);
+  const [lastUpdated, setLastUpdated] = useState(null);
+
+  const WEATHER_API_KEY = 'bdb6cd644053354271d07e32ba89b83';
+
+  // Fetch thời tiết theo toạ độ
+  const fetchWeatherByCoords = async (lat, lon) => {
+    const res = await axios.get('https://api.openweathermap.org/data/2.5/weather', {
+      params: { lat, lon, appid: WEATHER_API_KEY, units: 'metric', lang: 'vi' }
+    });
+    const d = res.data;
+    const now = d.dt;
+    const sr = d.sys?.sunrise;
+    const ss = d.sys?.sunset;
+    const dayNow = sr && ss ? (now >= sr && now < ss) : true;
+
+    setWeather({
+      temp: Math.round(d.main.temp),
+      description: d.weather?.[0]?.description || '',
+      icon: d.weather?.[0]?.icon || '01d',
+      city: d.name
+    });
+    setIsDay(dayNow);
+    setSunrise(sr ? new Date(sr * 1000) : null);
+    setSunset(ss ? new Date(ss * 1000) : null);
+    setLastUpdated(new Date());
   };
+
+  // Lấy vị trí + auto refresh 5 phút + refresh khi tab active trở lại
+  useEffect(() => {
+    let timerId;
+    let coordsCache = null;
+
+    const load = () => {
+      if (!coordsCache) return;
+      fetchWeatherByCoords(coordsCache.lat, coordsCache.lon).catch(() => {
+        // Fallback HCM nếu lỗi
+        setWeather({ temp: 28, description: 'nắng đẹp', icon: '01d', city: 'Hồ Chí Minh' });
+        setIsDay(true);
+        setSunrise(null);
+        setSunset(null);
+        setLastUpdated(new Date());
+      });
+    };
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        coordsCache = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+        load();
+        timerId = setInterval(load, 5 * 60 * 1000);
+      },
+      () => {
+        coordsCache = { lat: 10.8231, lon: 106.6297 }; // HCM fallback
+        load();
+        timerId = setInterval(load, 5 * 60 * 1000);
+      },
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 60_000 }
+    );
+
+    const onVisible = () => { if (!document.hidden) load(); };
+    document.addEventListener('visibilitychange', onVisible);
+
+    return () => {
+      if (timerId) clearInterval(timerId);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, []);
+
 
   // Hàm xử lý khi click vào thẻ kết quả
   const handleRecommendationClick = (placeId) => {
@@ -156,73 +328,98 @@ const HomePage = ({ setCurrentPage, setSelectedPlaceId }) => {
     <div className="pt-16">
       {/* Hero Section */}
       <div className="relative h-screen">
-        <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/90 to-blue-600/90 z-10"></div>
-        <img 
-          src="https://images.unsplash.com/photo-1528127269322-539801943592?w=1600" 
-          alt="Vietnam" 
+        {/* Overlay đổi theo ngày/đêm */}
+        <div
+          className={`absolute inset-0 bg-gradient-to-r ${
+            isDay ? 'from-cyan-500/90 to-blue-600/90' : 'from-indigo-900/90 to-slate-900/90'
+          } z-10`}
+        />
+        <img
+          src="https://images.unsplash.com/photo-1528127269322-539801943592?w=1600"
+          alt="Vietnam"
           className="w-full h-full object-cover"
         />
+
         <div className="absolute inset-0 z-20 flex flex-col items-center justify-center text-white px-4">
-          <h1 className="text-4xl md:text-6xl font-bold mb-4 text-center">
-            🌍 Smart Travel Hub
-          </h1>
+          <h1 className="text-4xl md:text-6xl font-bold mb-4 text-center">TRAVINAI</h1>
           <p className="text-xl md:text-2xl mb-8 text-center max-w-3xl">
-            Trợ lý du lịch AI cho Việt Nam
+            Smart travel with AI
           </p>
-          
-          {/* Weather Display */}
+
+          {/* Card thời tiết */}
           {weather && (
             <div className="bg-white/20 backdrop-blur-lg rounded-2xl p-6 mb-8 text-center">
               <div className="flex items-center justify-center gap-4">
-                <img 
+                <img
                   src={`https://openweathermap.org/img/wn/${weather.icon}@2x.png`}
                   alt="weather"
                   className="w-16 h-16"
                 />
                 <div className="text-left">
-                  <p className="text-3xl font-bold">{weather.temp}°C</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-3xl font-bold">{weather.temp}°C</p>
+                    <span className={`text-xs px-2 py-1 rounded-full ${isDay ? 'bg-yellow-300 text-yellow-900' : 'bg-indigo-300 text-indigo-900'}`}>
+                      {isDay ? 'Ban ngày' : 'Ban đêm'}
+                    </span>
+                  </div>
                   <p className="text-sm capitalize">{weather.description}</p>
                   <p className="text-xs opacity-80">📍 {weather.city}</p>
+                  {(sunrise || sunset) && (
+                    <div className="mt-2 text-xs opacity-90">
+                      {sunrise && <>🌅 {sunrise.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</>}
+                      {'  ·  '}
+                      {sunset && <>🌇 {sunset.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</>}
+                    </div>
+                  )}
+                  {lastUpdated && (
+                    <div className="text-[11px] opacity-70 mt-1">
+                      Cập nhật: {lastUpdated.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
           )}
 
-          {/* *** 🛑 THAY ĐỔI: Smart Search AI 🛑 *** */}
+          {/* Smart Search */}
           <div className="w-full max-w-3xl">
             <div className="bg-white rounded-full shadow-2xl p-2 flex items-center mb-4">
               <Search className="w-6 h-6 text-gray-400 ml-4" />
               <input
                 type="text"
-                placeholder="Tôi muốn đi biển yên tĩnh và ăn hải sản..." // 👈 THAY ĐỔI
+                placeholder="Tìm tên địa điểm (VD: Ba Na Hills, Hội An...)"
                 className="flex-1 px-4 py-3 text-gray-800 outline-none"
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-               onKeyDown={(e) => { if (e.key === 'Enter') handleSmartSearch(); }}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleSmartSearch(); }}
               />
-              <button 
+              <button
                 onClick={handleSmartSearch}
                 disabled={loading}
                 className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white px-8 py-3 rounded-full hover:shadow-lg transition disabled:opacity-50"
               >
-                {loading ? '🤖 AI Đang tìm...' : 'Tìm bằng AI'} 
+                {loading ? '🔍 Đang tìm...' : 'Tìm kiếm'}
               </button>
             </div>
             <p className="text-sm text-center text-white/80">
-              💡 Trợ lý AI sẽ tìm địa điểm phù hợp với yêu cầu của bạn 
+              💡 Tìm kiếm địa điểm trực tiếp từ cơ sở dữ liệu
             </p>
           </div>
 
-          {/* Hiển thị kết quả tìm kiếm từ DB */}
+          {/* Kết quả tìm kiếm */}
           {recommendations.length > 0 && (
             <div className="w-full max-w-4xl mt-8 grid md:grid-cols-3 gap-4">
               {recommendations.map((rec) => (
-                <div 
-                  key={rec.id} 
+                <div
+                  key={rec.id}
                   className="bg-white rounded-xl p-4 text-gray-800 shadow-lg cursor-pointer hover:shadow-2xl hover:scale-105 transition"
                   onClick={() => handleRecommendationClick(rec.id)}
                 >
-                  <img src={rec.thumbnail || 'https://via.placeholder.com/300x200'} alt={rec.name} className="w-full h-32 object-cover rounded-lg mb-3" />
+                  <img
+                    src={rec.thumbnail || 'https://via.placeholder.com/300x200'}
+                    alt={rec.name}
+                    className="w-full h-32 object-cover rounded-lg mb-3"
+                  />
                   <h3 className="font-bold text-lg mb-2">📍 {rec.name}</h3>
                   <p className="text-sm text-gray-600 mb-2 line-clamp-2">{rec.description}</p>
                 </div>
@@ -259,310 +456,135 @@ const HomePage = ({ setCurrentPage, setSelectedPlaceId }) => {
 };
 
 // Tools Page (Giữ nguyên)
-const ToolsPage = () => {
-  // ... (Toàn bộ code của ToolsPage giữ nguyên) ...
+const ToolsMenu = ({ setCurrentPage }) => {
+  const cards = [
+    { key: 'currency', title: 'Đổi tiền tệ', desc: 'Tỷ giá thời gian thực', Icon: DollarSign, color: 'text-green-500', btn: 'Mở trang' },
+    { key: 'translate', title: 'Phiên dịch AI', desc: 'Auto-detect → Tiếng Việt', Icon: Languages, color: 'text-purple-500', btn: 'Mở trang' },
+    { key: 'cost', title: 'Dự đoán chi phí (AI)', desc: 'Ước tính theo ngày/người', Icon: Navigation, color: 'text-blue-500', btn: 'Mở trang' },
+    { key: 'directions', title: 'Chỉ đường', desc: 'Google Maps Directions', Icon: Map, color: 'text-red-500', btn: 'Mở trang' },
+  ];
+
+  return (
+    <div className="pt-24 pb-12 min-h-screen bg-gray-50">
+      <div className="container mx-auto px-4">
+        <h1 className="text-4xl font-bold mb-2 text-gray-800">Công cụ</h1>
+        <div className="grid md:grid-cols-2 gap-6">
+          {cards.map(({ key, title, desc, Icon, color, btn }) => (
+            <div key={key} className="bg-white rounded-xl shadow-lg p-6 flex flex-col justify-between">
+              <div className="flex items-center gap-3 mb-3">
+                <Icon className={`w-8 h-8 ${color}`} />
+                <h2 className="text-2xl font-bold">{title}</h2>
+              </div>
+              <p className="text-gray-600 mb-6">{desc}</p>
+              <button
+                onClick={() => setCurrentPage(key)}
+                className="self-start bg-gradient-to-r from-cyan-500 to-blue-600 text-white px-5 py-2 rounded-lg hover:opacity-90"
+              >
+                {btn}
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+  const CurrencyPage = ({ setCurrentPage }) => {
   const [amount, setAmount] = useState(100);
   const [fromCurrency, setFromCurrency] = useState('USD');
   const [toCurrency, setToCurrency] = useState('VND');
   const [convertedAmount, setConvertedAmount] = useState(0);
   const [rates, setRates] = useState(null);
-  const [textToTranslate, setTextToTranslate] = useState('');
-  const [translatedText, setTranslatedText] = useState('');
-  const [translating, setTranslating] = useState(false);
-  const [destination, setDestination] = useState('');
-  const [days, setDays] = useState(3);
-  const [people, setPeople] = useState(2);
-  const [costPrediction, setCostPrediction] = useState(null);
 
   useEffect(() => {
-    fetchExchangeRates();
+    const fetchRates = async () => {
+      try {
+        const res = await axios.get('https://api.exchangerate-api.com/v4/latest/USD');
+        setRates(res.data.rates);
+      } catch {
+        setRates({ VND: 24000, EUR: 0.85, GBP: 0.73, USD: 1 });
+      }
+    };
+    fetchRates();
   }, []);
-
-  const fetchExchangeRates = async () => {
-    try {
-      const response = await axios.get('https://api.exchangerate-api.com/v4/latest/USD');
-      setRates(response.data.rates);
-    } catch (error) {
-      console.error('Lỗi lấy tỷ giá:', error);
-      setRates({ VND: 24000, EUR: 0.85, GBP: 0.73, USD: 1 });
-    }
-  };
 
   const handleConvert = () => {
     if (!rates) return;
-    if (fromCurrency === toCurrency) {
-      setConvertedAmount(amount);
-    } else {
-      const inUSD = fromCurrency === 'USD' ? amount : amount / rates[fromCurrency];
-      const result = toCurrency === 'USD' ? inUSD : inUSD * rates[toCurrency];
-      setConvertedAmount(result);
-    }
-  };
-
-  const handleTranslate = async () => {
-    if (!textToTranslate.trim()) return;
-    setTranslating(true);
-    try {
-      const response = await axios.post('http://127.0.0.1:5000/api/chat',
-        new URLSearchParams({
-          message: `Dịch sang tiếng Anh: "${textToTranslate}". Chỉ trả về bản dịch, không giải thích.`
-        })
-      );
-      setTranslatedText(response.data.reply);
-    } catch (error) {
-      console.error('Lỗi dịch:', error);
-      setTranslatedText('Lỗi kết nối API');
-    } finally {
-      setTranslating(false);
-    }
-  };
-
-  const handleSpeak = (text, lang) => {
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = lang === 'vi' ? 'vi-VN' : 'en-US';
-    utterance.rate = 0.9;
-    window.speechSynthesis.speak(utterance);
-  };
-
-  const handleCostPrediction = async () => {
-    if (!destination.trim()) return;
-    try {
-      const response = await axios.post('http://127.0.0.1:5000/api/chat',
-        new URLSearchParams({
-          message: `Ước tính chi phí du lịch ${destination} cho ${people} người trong ${days} ngày. Bao gồm: vé máy bay, khách sạn, ăn uống, vé tham quan. Trả về JSON: {"transport": số, "hotel": số, "food": số, "tickets": số, "total": số, "tourPrice": số}. Chỉ trả JSON, không giải thích.`
-        })
-      );
-      const jsonMatch = response.data.reply.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        const costs = JSON.parse(jsonMatch[0]);
-        setCostPrediction(costs);
-      }
-    } catch (error) {
-      console.error('Lỗi dự đoán:', error);
-    }
+    const inUSD = fromCurrency === 'USD' ? amount : amount / (rates[fromCurrency] || 1);
+    const result = toCurrency === 'USD' ? inUSD : inUSD * (rates[toCurrency] || 1);
+    setConvertedAmount(result);
   };
 
   return (
     <div className="pt-24 pb-12 min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4">
-        <h1 className="text-4xl font-bold mb-4 text-gray-800">🛠️ Công cụ</h1>
-        <p className="text-gray-600 mb-8">Sử dụng API thực tế và AI hỗ trợ chuyến đi</p>
+      <div className="container mx-auto px-4 max-w-3xl">
+        <button onClick={() => setCurrentPage('tools')} className="text-cyan-600 hover:underline mb-4">← Quay lại Công cụ</button>
+        <div className="bg-white rounded-xl shadow-lg p-6">
+          <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+            <DollarSign className="w-6 h-6 text-green-500" /> Đổi tiền tệ
+          </h2>
 
-        <div className="grid lg:grid-cols-2 gap-8">
-          
-          {/* Currency Converter */}
-          <div className="bg-white rounded-xl shadow-lg p-6">
-            <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-              <DollarSign className="w-6 h-6 text-green-500" />
-              Đổi tiền tệ (Live API)
-            </h2>
-            <div className="space-y-4">
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-semibold mb-2">Số tiền</label>
+              <input
+                type="number"
+                value={amount}
+                onChange={(e) => setAmount(parseFloat(e.target.value || 0))}
+                className="w-full px-4 py-3 border rounded-lg outline-none focus:ring-2 focus:ring-green-500"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-semibold mb-2">Số tiền</label>
-                <input
-                  type="number"
-                  value={amount}
-                  onChange={(e) => setAmount(parseFloat(e.target.value))}
+                <label className="block text-sm font-semibold mb-2">Từ</label>
+                <select
+                  value={fromCurrency}
+                  onChange={(e) => setFromCurrency(e.target.value)}
                   className="w-full px-4 py-3 border rounded-lg outline-none focus:ring-2 focus:ring-green-500"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-semibold mb-2">Từ</label>
-                  <select
-                    value={fromCurrency}
-                    onChange={(e) => setFromCurrency(e.target.value)}
-                    className="w-full px-4 py-3 border rounded-lg outline-none focus:ring-2 focus:ring-green-500"
-                  >
-                    <option value="USD">USD 🇺🇸</option>
-                    <option value="VND">VND 🇻🇳</option>
-                    <option value="EUR">EUR 🇪🇺</option>
-                    <option value="GBP">GBP 🇬🇧</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold mb-2">Sang</label>
-                  <select
-                    value={toCurrency}
-                    onChange={(e) => setToCurrency(e.target.value)}
-                    className="w-full px-4 py-3 border rounded-lg outline-none focus:ring-2 focus:ring-green-500"
-                  >
-                    <option value="VND">VND 🇻🇳</option>
-                    <option value="USD">USD 🇺🇸</option>
-                    <option value="EUR">EUR 🇪🇺</option>
-                    <option value="GBP">GBP 🇬🇧</option>
-                  </select>
-                </div>
-              </div>
-              <button
-                onClick={handleConvert}
-                className="w-full bg-green-500 text-white py-3 rounded-lg font-semibold hover:bg-green-600 transition"
-              >
-                Quy đổi (Live Rate)
-              </button>
-              {convertedAmount > 0 && (
-                <div className="bg-green-50 border-2 border-green-500 rounded-lg p-4 text-center">
-                  <p className="text-sm text-gray-600 mb-1">Kết quả</p>
-                  <p className="text-3xl font-bold text-green-600">
-                    {convertedAmount.toLocaleString()} {toCurrency}
-                  </p>
-                  {rates && <p className="text-xs text-gray-500 mt-2">Tỷ giá: 1 {fromCurrency} = {rates[toCurrency]?.toFixed(2)} {toCurrency}</p>}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* AI Translation */}
-          <div className="bg-white rounded-xl shadow-lg p-6">
-            <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-              <Languages className="w-6 h-6 text-purple-500" />
-              Phiên dịch AI + Lồng tiếng
-            </h2>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-semibold mb-2">Văn bản tiếng Việt</label>
-                <textarea
-                  value={textToTranslate}
-                  onChange={(e) => setTextToTranslate(e.target.value)}
-                  className="w-full px-4 py-3 border rounded-lg outline-none focus:ring-2 focus:ring-purple-500"
-                  rows={3}
-                  placeholder="Nhập văn bản cần dịch..."
-                />
-                <button
-                  onClick={() => handleSpeak(textToTranslate, 'vi')}
-                  className="mt-2 text-sm text-purple-600 hover:text-purple-700 flex items-center gap-1"
                 >
-                  <Play className="w-4 h-4" /> Nghe tiếng Việt
-                </button>
+                  <option value="USD">USD 🇺🇸</option>
+                  <option value="VND">VND 🇻🇳</option>
+                  <option value="EUR">EUR 🇪🇺</option>
+                  <option value="GBP">GBP 🇬🇧</option>
+                </select>
               </div>
-              <button
-                onClick={handleTranslate}
-                disabled={translating}
-                className="w-full bg-purple-500 text-white py-3 rounded-lg font-semibold hover:bg-purple-600 transition disabled:opacity-50"
-              >
-                {translating ? '🤖 AI đang dịch...' : 'Dịch sang tiếng Anh (AI)'}
-              </button>
-              {translatedText && (
-                <div className="bg-purple-50 border-2 border-purple-500 rounded-lg p-4">
-                  <div className="flex justify-between items-start mb-2">
-                    <p className="text-sm font-semibold text-purple-700">Bản dịch (English)</p>
-                    <button
-                      onClick={() => handleSpeak(translatedText, 'en')}
-                      className="text-purple-600 hover:text-purple-700"
-                    >
-                      <Play className="w-5 h-5" />
-                    </button>
-                  </div>
-                  <p className="text-lg">{translatedText}</p>
-                </div>
-              )}
+              <div>
+                <label className="block text-sm font-semibold mb-2">Sang</label>
+                <select
+                  value={toCurrency}
+                  onChange={(e) => setToCurrency(e.target.value)}
+                  className="w-full px-4 py-3 border rounded-lg outline-none focus:ring-2 focus:ring-green-500"
+                >
+                  <option value="VND">VND 🇻🇳</option>
+                  <option value="USD">USD 🇺🇸</option>
+                  <option value="EUR">EUR 🇪🇺</option>
+                  <option value="GBP">GBP 🇬🇧</option>
+                </select>
+              </div>
             </div>
-          </div>
 
-          {/* AI Cost Prediction */}
-          <div className="bg-white rounded-xl shadow-lg p-6 lg:col-span-2">
-            <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-              <DollarSign className="w-6 h-6 text-blue-500" />
-              Dự đoán chi phí du lịch (AI)
-            </h2>
-            <div className="grid md:grid-cols-3 gap-4 mb-4">
-              <div>
-                <label className="block text-sm font-semibold mb-2">Điểm đến</label>
-                <input
-                  type="text"
-                  value={destination}
-                  onChange={(e) => setDestination(e.target.value)}
-                  className="w-full px-4 py-3 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="VD: Đà Nẵng"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold mb-2">Số ngày: {days}</label>
-                <input
-                  type="range"
-                  min="1"
-                  max="7"
-                  value={days}
-                  onChange={(e) => setDays(parseInt(e.target.value))}
-                  className="w-full"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-semibold mb-2">Số người: {people}</label>
-                <input
-                  type="range"
-                  min="1"
-                  max="10"
-                  value={people}
-                  onChange={(e) => setPeople(parseInt(e.target.value))}
-                  className="w-full"
-                />
-              </div>
-            </div>
             <button
-              onClick={handleCostPrediction}
-              className="w-full bg-blue-500 text-white py-3 rounded-lg font-semibold hover:bg-blue-600 transition mb-4"
+              onClick={handleConvert}
+              className="w-full bg-green-500 text-white py-3 rounded-lg font-semibold hover:bg-green-600 transition"
             >
-              Dự đoán chi phí
+              Quy đổi (Live Rate)
             </button>
-            {costPrediction && (
-              <div className="grid md:grid-cols-2 gap-4">
-                <div className="space-y-3">
-                  <div className="flex justify-between p-3 bg-blue-50 rounded-lg">
-                    <span>Di chuyển</span>
-                    <span className="font-bold">{costPrediction.transport?.toLocaleString()}đ</span>
-                  </div>
-                  <div className="flex justify-between p-3 bg-green-50 rounded-lg">
-                    <span>Khách sạn</span>
-                    <span className="font-bold">{costPrediction.hotel?.toLocaleString()}đ</span>
-                  </div>
-                  <div className="flex justify-between p-3 bg-yellow-50 rounded-lg">
-                    <span>Ăn uống</span>
-                    <span className="font-bold">{costPrediction.food?.toLocaleString()}đ</span>
-                  </div>
-                  <div className="flex justify-between p-3 bg-purple-50 rounded-lg">
-                    <span>Vé tham quan</span>
-                    <span className="font-bold">{costPrediction.tickets?.toLocaleString()}đ</span>
-                  </div>
-                </div>
-                <div className="bg-gradient-to-br from-cyan-500 to-blue-600 text-white rounded-xl p-6">
-                  <p className="text-sm mb-2">Tổng chi phí dự kiến</p>
-                  <p className="text-4xl font-bold mb-4">{costPrediction.total?.toLocaleString()}đ</p>
-                  <p className="text-sm mb-1">So với giá tour</p>
-                  <p className="text-2xl font-bold">{costPrediction.tourPrice?.toLocaleString()}đ</p>
-                  <p className="text-xs mt-2">
-                    {costPrediction.total < costPrediction.tourPrice ? 
-                      `✨ Tiết kiệm ${(costPrediction.tourPrice - costPrediction.total).toLocaleString()}đ` :
-                      '💡 Đặt tour có thể tiện lợi hơn'}
+
+            {convertedAmount > 0 && (
+              <div className="bg-green-50 border-2 border-green-500 rounded-lg p-4 text-center">
+                <p className="text-sm text-gray-600 mb-1">Kết quả</p>
+                <p className="text-3xl font-bold text-green-600">
+                  {convertedAmount.toLocaleString()} {toCurrency}
+                </p>
+                {rates && (
+                  <p className="text-xs text-gray-500 mt-2">
+                    Tỷ giá: 1 {fromCurrency} = {(rates[toCurrency] || 1).toFixed(2)} {toCurrency}
                   </p>
-                </div>
+                )}
               </div>
             )}
-          </div>
-          
-          {/* Google Maps Direction */}
-          <div className="bg-white rounded-xl shadow-lg p-6 lg:col-span-2">
-    <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-      <Map className="w-6 h-6 text-red-500" />
-      Chỉ đường (Google Maps API)
-    </h2>
-    <div className="bg-gray-100 h-96 rounded-lg flex items-center justify-center">
-      <div className="text-center">
-        <MapPinned className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-        {/* LỖI ĐÃ SỬA: Thay </g> bằng </p> */}
-        <p className="text-gray-600 mb-4">Nhập điểm đến để xem chỉ đường</p> 
-        <input
-          type="text"
-          placeholder="VD: Vịnh Hạ Long"
-          className="px-4 py-2 border rounded-lg mb-2"
-        />
-        {/* LỖI ĐÃ SỬA: Xóa p/> không hợp lệ */}
-        <button className="block mx-auto bg-red-500 text-white px-6 py-2 rounded-lg hover:bg-red-600">
-          Chỉ đường
-        </button>
-        <p className="text-xs text-gray-500 mt-2">Tích hợp Google Maps Directions API</p>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -570,9 +592,397 @@ const ToolsPage = () => {
   );
 };
 
+// === TranslatePage: tự phát hiện ngôn ngữ, dịch về Tiếng Việt ===
+// --- Patch: Ưu tiên dịch về Tiếng Việt & phát giọng Tiếng Việt ổn định ---
+// (Bạn chỉ cần thay thế các hàm dưới đây vào file App.js của bạn)
 
-// *** ĐÃ XÓA: ExplorePage và DestinationCard (đã chuyển sang file ExplorePage.js) ***
+// 1) Hook lấy danh sách voice như cũ
+function useVoices() {
+  const [voices, setVoices] = React.useState(window.speechSynthesis.getVoices());
+  React.useEffect(() => {
+    const handle = () => setVoices(window.speechSynthesis.getVoices());
+    window.speechSynthesis.addEventListener("voiceschanged", handle);
+    // Kích hoạt tải voice (đặc biệt Safari/iOS)
+    window.speechSynthesis.getVoices();
+    return () => window.speechSynthesis.removeEventListener("voiceschanged", handle);
+  }, []);
+  return voices;
+}
 
+// 2) Tìm đúng giọng Tiếng Việt (nếu có)
+function findVietnameseVoice(voices) {
+  if (!voices || !voices.length) return null;
+  const byExact = voices.find(v => (v.lang || '').toLowerCase() === 'vi-vn');
+  const byPrefix = voices.find(v => (v.lang || '').toLowerCase().startsWith('vi'));
+  const byName = voices.find(v => /vietnam|vi[eê]t/i.test(v.name || ''));
+  return byExact || byPrefix || byName || null;
+}
+
+// 3) Chọn voice theo ngôn ngữ (mặc định có ưu tiên vi-VN nếu langHint là vi-VN)
+function pickVoice(voices, lang) {
+  if (!voices || !voices.length) return null;
+  if (lang && lang.toLowerCase() === 'vi-vn') {
+    const vi = findVietnameseVoice(voices);
+    if (vi) return vi;
+  }
+  return (
+    voices.find(v => (v.lang || '').toLowerCase() === (lang || '').toLowerCase()) ||
+    voices.find(v => (v.lang || '').toLowerCase().startsWith((lang || '').split('-')[0].toLowerCase())) ||
+    voices.find(v => (v.lang || '').toLowerCase().startsWith('en')) ||
+    voices[0]
+  );
+}
+
+// 4) Đoán ngôn ngữ (giữ nguyên logic cũ cho nút "nghe bản gốc")
+function guessLang(text = "") {
+  if (/[ぁ-ゟ゠-ヿ一-龯]/.test(text)) return "ja-JP";       // Nhật
+  if (/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(text)) return "ko-KR";     // Hàn
+  if (/[\u4E00-\u9FFF]/.test(text) && !/[ぁ-ゟ゠-ヿ]/.test(text)) {
+    if (/[的是我你了嗎吗他她們们在不有]/.test(text)) return "zh-CN";
+  }
+  if (/[а-яё]/i.test(text)) return "ru-RU";                // Nga
+  if (/[áàảãạăâđéèẻẽẹêíìỉĩịóòỏõọôơúùủũụưýỳỷỹỵ]/i.test(text)) return "vi-VN"; // Việt
+  if (/[ก-๙]/.test(text)) return "th-TH";                  // Thái
+  if (/[a-z]/i.test(text)) return "en-US";                 // Latin chung -> EN
+  return "en-US";
+}
+
+// 5) Hook speak: đảm bảo khi langHint='vi-VN' sẽ phát tiếng Việt
+export function useSpeak() {
+  const voices = useVoices();
+  const speakingRef = React.useRef(false);
+
+  const speak = (text, langHint) => {
+    if (!text) return;
+    try { window.speechSynthesis.cancel(); } catch {}
+    const lang = (langHint && langHint.trim()) || guessLang(text);
+    const u = new SpeechSynthesisUtterance(text);
+    const voice = pickVoice(voices, lang);
+    if (voice) u.voice = voice;
+    // Nếu yêu cầu vi-VN mà không tìm thấy voice vi, vẫn đặt lang='vi-VN' để hệ thống chọn gần nhất
+    u.lang = voice?.lang || lang || 'vi-VN';
+    u.rate = 0.95;   // tốc độ tự nhiên
+    u.pitch = 1.0;   // cao độ tự nhiên
+    speakingRef.current = true;
+    u.onend = () => (speakingRef.current = false);
+    window.speechSynthesis.speak(u);
+  };
+
+  // helper ngắn gọn: luôn đọc tiếng Việt
+  const speakVI = (text) => speak(text, 'vi-VN');
+
+  return { speak, speakVI };
+}
+
+// === Cách dùng trong TranslatePage ===
+// - Nút "Nghe bản gốc": giữ nguyên auto-detect -> speak(textToTranslate)
+// - Nút "Nghe tiếng Việt": đổi sang dùng speakVI để luôn đảm bảo giọng Việt
+//   <button onClick={() => speakVI(translatedText)} ...>
+
+
+// --- Patch 2: Translate từ Tiếng Việt sang NGÔN NGỮ KHÁC + đọc giọng đích ---
+// Thay thế nguyên component TranslatePage bằng phiên bản dưới đây.
+// Giữ nguyên useSpeak ở Patch 1 (đã có speak() và speakVI()).
+
+const LANGUAGE_OPTIONS = [
+  { code: 'en-US', label: 'English' },
+  { code: 'ja-JP', label: '日本語 (Japanese)' },
+  { code: 'ko-KR', label: '한국어 (Korean)' },
+  { code: 'zh-CN', label: '中文-简体 (Chinese Simplified)' },
+  { code: 'zh-TW', label: '中文-繁體 (Chinese Traditional)' },
+  { code: 'fr-FR', label: 'Français (French)' },
+  { code: 'de-DE', label: 'Deutsch (German)' },
+  { code: 'es-ES', label: 'Español (Spanish)' },
+  { code: 'it-IT', label: 'Italiano (Italian)' },
+  { code: 'pt-PT', label: 'Português (Portuguese)' },
+  { code: 'th-TH', label: 'ไทย (Thai)' },
+  { code: 'ru-RU', label: 'Русский (Russian)' },
+];
+
+const TranslatePage = ({ setCurrentPage }) => {
+  const [textToTranslate, setTextToTranslate] = React.useState("");
+  const [translatedText, setTranslatedText] = React.useState("");
+  const [translating, setTranslating] = React.useState(false);
+  const [targetLang, setTargetLang] = React.useState("de-DE");
+  const { speak } = useSpeak();
+
+  const targetLabel = React.useMemo(() => {
+    return LANGUAGE_OPTIONS.find((l) => l.code === targetLang)?.label || targetLang;
+  }, [targetLang]);
+
+  const handleTranslate = async () => {
+    const src = textToTranslate.trim();
+    if (!src) return;
+    setTranslating(true);
+    try {
+      const response = await axios.post(
+        "http://127.0.0.1:5000/api/chat",
+        new URLSearchParams({
+          message: `Hãy phát hiện ngôn ngữ của đoạn văn sau và dịch CHÍNH XÁC sang ${targetLabel} (${targetLang}).
+Chỉ trả về bản dịch thuần văn bản, không ghi chú hay giải thích nào khác.
+Đoạn văn:
+"""${src}"""`,
+        })
+      );
+      setTranslatedText(response.data.reply || "");
+    } catch (err) {
+      console.error("Lỗi dịch:", err);
+      setTranslatedText("Lỗi kết nối API");
+    } finally {
+      setTranslating(false);
+    }
+  };
+
+  const copy = async (text) => {
+    try { await navigator.clipboard.writeText(text || ""); } catch {}
+  };
+
+  const clearAll = () => { setTextToTranslate(""); setTranslatedText(""); };
+
+  return (
+    <div className="pt-24 pb-16 min-h-screen bg-gradient-to-b from-gray-50 to-white">
+      <div className="container mx-auto px-4 max-w-4xl">
+        <button
+          onClick={() => setCurrentPage("tools")}
+          className="group inline-flex items-center gap-1 text-cyan-600 hover:text-cyan-700 mb-5"
+        >
+          <span className="transition-transform group-hover:-translate-x-0.5">←</span> Quay lại Công cụ
+        </button>
+
+        {/* Heading */}
+        <div className="mb-6">
+          <h2 className="text-3xl md:text-4xl font-extrabold tracking-tight text-gray-900">
+            <span className="inline-flex items-center gap-2">
+              <span className="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-purple-100">🗣️</span>
+              Trình dịch AI
+            </span>
+          </h2>
+          <p className="mt-2 text-gray-600">Tự phát hiện ngôn ngữ nguồn và dịch sang ngôn ngữ đích. Hỗ trợ đọc to bằng giọng bản ngữ.</p>
+        </div>
+
+        {/* Card */}
+        <div className="relative rounded-2xl p-[1px] bg-gradient-to-r from-purple-400 to-cyan-400 shadow-[0_10px_30px_rgba(0,0,0,0.06)]">
+          <div className="rounded-2xl bg-white">
+            <div className="p-6 md:p-8">
+              <div className="grid md:grid-cols-3 gap-5 items-start">
+                {/* Left: input */}
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-semibold text-gray-800 mb-2">Nhập văn bản (Tiếng Việt hoặc bất kỳ ngôn ngữ nào)</label>
+                  <div className="relative">
+                    <textarea
+                      value={textToTranslate}
+                      onChange={(e) => setTextToTranslate(e.target.value)}
+                      rows={6}
+                      placeholder="Dán đoạn văn cần dịch…"
+                      className="w-full rounded-xl border border-gray-200 bg-gray-50 focus:bg-white px-4 py-3 outline-none focus:ring-4 focus:ring-purple-100 focus:border-purple-400 transition"
+                    />
+                    <div className="absolute right-2 bottom-2 flex items-center gap-2">
+                      <button
+                        onClick={() => speak(textToTranslate)}
+                        className="px-3 py-1.5 text-sm rounded-lg bg-white border border-gray-200 hover:border-purple-300 hover:text-purple-700 transition"
+                        title="Nghe bản gốc (auto)"
+                      >
+                        Nghe gốc
+                      </button>
+                      <button
+                        onClick={() => copy(textToTranslate)}
+                        className="px-3 py-1.5 text-sm rounded-lg bg-white border border-gray-200 hover:border-purple-300 transition"
+                        title="Sao chép"
+                      >
+                        Sao chép
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right: target lang */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-800 mb-2">Dịch sang</label>
+                  <select
+                    value={targetLang}
+                    onChange={(e) => setTargetLang(e.target.value)}
+                    className="w-full rounded-xl border border-gray-200 px-4 py-3 bg-white focus:outline-none focus:ring-4 focus:ring-purple-100 focus:border-purple-400"
+                  >
+                    {LANGUAGE_OPTIONS.map((opt) => (
+                      <option key={opt.code} value={opt.code}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+
+                  <div className="mt-4 grid grid-cols-2 gap-3">
+                    <button
+                      onClick={clearAll}
+                      className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
+                    >
+                      Xoá nội dung
+                    </button>
+                    <button
+                      onClick={() => copy(translatedText)}
+                      className="w-full rounded-xl border border-gray-200 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
+                    >
+                      Copy kết quả
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Translate button */}
+              <div className="mt-6">
+                <button
+                  onClick={handleTranslate}
+                  disabled={translating}
+                  className="relative w-full md:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-500 text-white font-semibold px-6 py-3 shadow-lg hover:opacity-95 disabled:opacity-60"
+                >
+                  {translating && (
+                    <svg className="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4l3-3-3-3v4a12 12 0 00-12 12h4z"></path>
+                    </svg>
+                  )}
+                  {translating ? "Đang dịch…" : `Dịch sang ${targetLabel}`}
+                </button>
+              </div>
+
+              {/* Result */}
+              {translatedText && (
+                <div className="mt-6">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm font-semibold text-purple-700">Bản dịch ({targetLabel})</p>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => speak(translatedText, targetLang)}
+                        className="px-3 py-1.5 text-sm rounded-lg bg-white border border-purple-300 text-purple-700 hover:bg-purple-50"
+                        title={`Nghe ${targetLabel}`}
+                      >
+                        Nghe
+                      </button>
+                      <button
+                        onClick={() => copy(translatedText)}
+                        className="px-3 py-1.5 text-sm rounded-lg bg-white border border-gray-200 hover:bg-gray-50"
+                        title="Sao chép"
+                      >
+                        Copy
+                      </button>
+                    </div>
+                  </div>
+                  <div className="rounded-xl border border-purple-200 bg-purple-50/60 p-4 leading-relaxed text-gray-900 whitespace-pre-wrap">
+                    {translatedText}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+  return (
+    <div className="pt-24 pb-12 min-h-screen bg-gray-50">
+      <div className="container mx-auto px-4 max-w-3xl">
+        <button
+          onClick={() => setCurrentPage('tools')}
+          className="text-cyan-600 hover:underline mb-4"
+        >
+          ← Quay lại Công cụ
+        </button>
+
+        <div className="bg-white rounded-xl shadow-lg p-6">
+          <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+            <Languages className="w-6 h-6 text-purple-500" />
+            Phiên dịch (Auto-detect)
+          </h2>
+
+          <div className="space-y-4">
+            <div className="grid md:grid-cols-3 gap-3 items-end">
+              <div className="md:col-span-2">
+                <label className="block text-sm font-semibold mb-2">Nhập Tiếng Việt (hoặc bất kỳ ngôn ngữ nào)</label>
+                <textarea
+                  value={textToTranslate}
+                  onChange={(e) => setTextToTranslate(e.target.value)}
+                  className="w-full px-4 py-3 border rounded-lg outline-none focus:ring-2 focus:ring-purple-500"
+                  rows={4}
+                  placeholder="Dán đoạn văn cần dịch..."
+                />
+                <button
+                  onClick={() => speak(textToTranslate /* auto-detect giọng gốc */)}
+                  className="mt-2 text-sm text-purple-600 hover:text-purple-700 flex items-center gap-1"
+                  title="Nghe bản gốc (auto-detect giọng)"
+                >
+                  <Play className="w-4 h-4" /> Nghe bản gốc (auto)
+                </button>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold mb-2">Dịch sang</label>
+                <select
+                  value={targetLang}
+                  onChange={(e) => setTargetLang(e.target.value)}
+                  className="w-full px-3 py-3 border rounded-lg outline-none focus:ring-2 focus:ring-purple-500"
+                >
+                  {LANGUAGE_OPTIONS.map((opt) => (
+                    <option key={opt.code} value={opt.code}>{opt.label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <button
+              onClick={handleTranslate}
+              disabled={translating}
+              className="w-full bg-purple-500 text-white py-3 rounded-lg font-semibold hover:bg-purple-600 transition disabled:opacity-50"
+            >
+              {translating ? 'Đang dịch...' : `Dịch sang ${targetLabel}`}
+            </button>
+
+            {translatedText && (
+              <div className="bg-purple-50 border-2 border-purple-500 rounded-lg p-4">
+                <div className="flex justify-between items-start mb-2">
+                  <p className="text-sm font-semibold text-purple-700">
+                    Bản dịch ({targetLabel})
+                  </p>
+                  <button
+                    onClick={() => speak(translatedText, targetLang)}
+                    className="text-purple-600 hover:text-purple-700"
+                    title={`Nghe ${targetLabel}`}
+                  >
+                    <Play className="w-5 h-5" />
+                  </button>
+                </div>
+                <p className="text-lg whitespace-pre-wrap">{translatedText}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const DirectionsPage = ({ setCurrentPage }) => {
+  return (
+    <div className="pt-24 pb-12 min-h-screen bg-gray-50">
+      <div className="container mx-auto px-4 max-w-4xl">
+        <button onClick={() => setCurrentPage('tools')} className="text-cyan-600 hover:underline mb-4">← Quay lại Công cụ</button>
+        <div className="bg-white rounded-xl shadow-lg p-6">
+          <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+            <Map className="w-6 h-6 text-red-500" /> Chỉ đường (Google Maps API)
+          </h2>
+          <div className="bg-gray-100 h-96 rounded-lg flex items-center justify-center">
+            <div className="text-center">
+              <MapPinned className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+              <p className="text-gray-600 mb-4">Nhập điểm đến để xem chỉ đường</p>
+              <input type="text" placeholder="VD: Vịnh Hạ Long" className="px-4 py-2 border rounded-lg mb-2" />
+              <button className="block mx-auto bg-red-500 text-white px-6 py-2 rounded-lg hover:bg-red-600">
+                Chỉ đường
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // Map Page
 const MapPage = () => {
@@ -1200,7 +1610,7 @@ const Footer = ({ setCurrentPage }) => (
         <div>
           <div className="flex items-center gap-2 mb-4">
             <Globe className="w-8 h-8" />
-            <span className="text-xl font-bold">Smart Travel Hub</span>
+            <span className="text-xl font-bold">TRAVINAI</span>
           </div>
           <p className="text-gray-400 text-sm">
             Nền tảng du lịch thông minh với AI & APIs
@@ -1211,7 +1621,7 @@ const Footer = ({ setCurrentPage }) => (
           <ul className="space-y-2 text-sm text-gray-400">
             <li>🤖 Gợi ý điểm đến (Gemini AI)</li>
             <li>🌤️ Dự báo thời tiết (OpenWeather)</li>
-            <li>💵 Đổi tiền tệ (Live API)</li>
+            <li>💵 Đổi tiền tệ</li>
             <li>🗣️ Phiên dịch & Lồng tiếng</li>
           </ul>
         </div>
@@ -1241,81 +1651,390 @@ const Footer = ({ setCurrentPage }) => (
   </footer>
 );
 
-// Main App
-// *** CẬP NHẬT: Xử lý URL (F5) cho trang chi tiết ***
-const App = () => {
-  const [currentPage, setCurrentPage] = useState('home');
-  const [selectedPlaceId, setSelectedPlaceId] = useState(null); // ID của địa điểm đang xem
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [isChatOpen, setIsChatOpen] = useState(false);
+const CostPage = ({ setCurrentPage }) => {
+  const [origin, setOrigin] = useState('TP. Hồ Chí Minh');
+  const [destination, setDestination] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [days, setDays] = useState(3);
+  const [people, setPeople] = useState(2);
+  const [costPrediction, setCostPrediction] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState('');
 
-  // Xử lý nếu URL có query ?place=... (để F5 trang chi tiết)
+  // NEW: phân tích
+  const [analysis, setAnalysis] = useState(null);     // phân tích nhanh local
+  const [aiAnalysis, setAiAnalysis] = useState('');   // phân tích chi tiết AI
+  const [analyzing, setAnalyzing] = useState(false);
+
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const placeIdFromUrl = urlParams.get('place');
-    if (placeIdFromUrl) {
-      setSelectedPlaceId(parseInt(placeIdFromUrl));
-      setCurrentPage('details');
+    if (startDate && endDate) {
+      const d1 = new Date(startDate);
+      const d2 = new Date(endDate);
+      const diff = Math.ceil((d2 - d1) / (1000 * 60 * 60 * 24));
+      if (diff >= 1) setDays(diff);
     }
-  }, []);
+  }, [startDate, endDate]);
 
-  // Cập nhật URL khi chuyển trang chi tiết
-  useEffect(() => {
-    const url = new URL(window.location.href);
-    if (currentPage === 'details' && selectedPlaceId) {
-      url.searchParams.set('place', selectedPlaceId);
-      window.history.pushState({}, '', url);
-    } else if (currentPage === 'home') { // Xóa query khi về home
-      url.searchParams.delete('place');
-      window.history.pushState({}, '', url);
+  const analyzeLocally = (c) => {
+    if (!c) return null;
+    const total = c.total || (c.transport + c.hotel + c.food + c.tickets);
+    const pct = (x) => total ? Math.round((x / total) * 100) : 0;
+    const parts = [
+      { key: 'transport', label: 'Di chuyển', value: c.transport || 0, pct: pct(c.transport || 0) },
+      { key: 'hotel',     label: 'Khách sạn', value: c.hotel || 0,     pct: pct(c.hotel || 0) },
+      { key: 'food',      label: 'Ăn uống',   value: c.food || 0,      pct: pct(c.food || 0) },
+      { key: 'tickets',   label: 'Vé tham quan', value: c.tickets || 0, pct: pct(c.tickets || 0) },
+    ].sort((a,b)=>b.value-a.value);
+
+    const top = parts[0];
+    const tips = [];
+    if (top.key === 'transport') tips.push('Cân nhắc đặt vé sớm, linh hoạt giờ bay, hoặc chọn hãng giá rẻ/đi tàu-xe thay máy bay chặng ngắn.');
+    if (top.key === 'hotel')     tips.push('Chọn khách sạn cách trung tâm 1–2km, đặt combo nhiều đêm, hoặc cân nhắc homestay.');
+    if (top.key === 'food')      tips.push('Ưu tiên quán địa phương/cơm phần, tránh khu quá “touristy”, tham khảo review giá trước.');
+    if (top.key === 'tickets')   tips.push('Mua vé online sớm, gom combo địa điểm, kiểm tra ưu đãi theo khung giờ/ngày.');
+
+    if (people > 4) tips.push('Nhóm đông: thuê căn hộ/nhà nguyên căn thường rẻ hơn tính trên đầu người.');
+    if (days >= 6)  tips.push('Lịch dài ngày: gom điểm ở gần nhau để giảm chi phí di chuyển nội địa.');
+
+    return { total, parts, top, tips };
+  };
+
+  const handleCostPrediction = async () => {
+    setErr('');
+    setAiAnalysis('');
+    if (!destination.trim()) { setErr('⚠️ Vui lòng nhập điểm đến.'); return; }
+    if (days < 1 || people < 1) { setErr('⚠️ Số ngày và số người phải lớn hơn 0.'); return; }
+
+    setLoading(true);
+    setCostPrediction(null);
+    setAnalysis(null);
+
+    try {
+      const dateInfo = startDate && endDate
+        ? `Thời gian: từ ${startDate} đến ${endDate} (≈ ${days} ngày).`
+        : `Thời gian: khoảng ${days} ngày (chưa xác định ngày cụ thể).`;
+
+      const response = await axios.post(
+        'http://127.0.0.1:5000/api/chat',
+        new URLSearchParams({
+          message: `Hãy ước tính chi phí du lịch từ ${origin} đến ${destination} cho ${people} người trong ${days} ngày.
+${dateInfo}
+Bao gồm: vé máy bay/di chuyển, khách sạn, ăn uống, vé tham quan.
+Trả về JSON: {"transport": số, "hotel": số, "food": số, "tickets": số, "total": số, "tourPrice": số}.
+Chỉ trả JSON, không giải thích.`
+        })
+      );
+
+      const m = response.data.reply?.match(/\{[\s\S]*\}/);
+      if (m) {
+        const costs = JSON.parse(m[0]);
+        setCostPrediction(costs);
+        setAnalysis(analyzeLocally(costs));  // NEW: phân tích ngay
+      } else {
+        setErr('AI không trả về dữ liệu hợp lệ.');
+      }
+    } catch (error) {
+      console.error('Lỗi dự đoán:', error);
+      setErr('Không thể tính chi phí. Hãy thử lại.');
+    } finally {
+      setLoading(false);
     }
-  }, [currentPage, selectedPlaceId]);
+  };
 
+  // NEW: gọi AI phân tích sâu (retry/backoff chống 429)
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+  const analyzeWithAI = async () => {
+    if (!costPrediction) return;
+    setAnalyzing(true);
+    setAiAnalysis('');
+    let attempt = 0, maxAttempt = 3, backoff = 1200;
+
+    while (attempt < maxAttempt) {
+      try {
+        const resp = await axios.post(
+          'http://127.0.0.1:5000/api/chat',
+          new URLSearchParams({
+            message: `Dựa trên dữ liệu chi phí JSON sau, hãy phân tích ngắn gọn, súc tích:
+- Mục nào chiếm % cao nhất và vì sao.
+- 2-3 gợi ý tối ưu chi phí có số %/tiền ước tính tiết kiệm.
+- Cảnh báo rủi ro (mùa cao điểm, chi phí phát sinh).
+- Tóm tắt 1-2 câu tổng thể cho hành trình ${origin} → ${destination}, ${people} người / ${days} ngày.
+JSON:
+"""${JSON.stringify(costPrediction)}"""`,
+          }),
+          { timeout: 30000 }
+        );
+        setAiAnalysis(resp.data.reply || '');
+        return;
+      } catch (e) {
+        const code = e?.response?.status;
+        const is429 = code === 429 || /RESOURCE_EXHAUSTED/i.test(e?.response?.data?.error?.status || '');
+        if (!is429) { setAiAnalysis('Không phân tích được (lỗi khác 429).'); break; }
+        attempt += 1;
+        if (attempt >= maxAttempt) { setAiAnalysis('Máy chủ AI đang quá tải, hãy thử lại sau.'); break; }
+        await sleep(backoff); backoff *= 1.8;
+      }
+    }
+    setAnalyzing(false);
+  };
+
+  const resetAll = () => {
+    setOrigin('TP. Hồ Chí Minh'); setDestination('');
+    setStartDate(''); setEndDate('');
+    setDays(3); setPeople(2);
+    setCostPrediction(null); setAnalysis(null);
+    setAiAnalysis(''); setErr('');
+  };
 
   return (
-    <div className="min-h-screen bg-white">
-      <NavBar 
-        setCurrentPage={setCurrentPage} 
-        setMobileMenuOpen={setMobileMenuOpen} 
-        mobileMenuOpen={mobileMenuOpen}
-        setSelectedPlaceId={setSelectedPlaceId} // Truyền hàm set
-      />
-      
-      {/* Logic điều hướng trang */}
-      {currentPage === 'home' && <HomePage 
-                                    setCurrentPage={setCurrentPage} 
-                                    setSelectedPlaceId={setSelectedPlaceId} 
-                                  />}
-      
-      {/* *** CẬP NHẬT: Truyền props cho ExplorePage *** */}
-      {currentPage === 'explore' && <ExplorePage 
-                                      setCurrentPage={setCurrentPage}
-                                      setSelectedPlaceId={setSelectedPlaceId}
-                                    />}
-      
-      {currentPage === 'tools' && <ToolsPage />}
-      {currentPage === 'map' && <MapPage />}
-      {currentPage === 'details' && <DestinationDetailPage 
-                                      placeId={selectedPlaceId} 
-                                      setCurrentPage={setCurrentPage} 
-                                    />}
-      
-      <Footer setCurrentPage={setCurrentPage} />
+    <div className="pt-24 pb-12 min-h-screen bg-gray-50">
+      <div className="container mx-auto px-4 max-w-4xl">
+        <button
+          onClick={() => setCurrentPage('tools')}
+          className="text-cyan-600 hover:underline mb-4"
+        >
+          ← Quay lại Công cụ
+        </button>
 
-      <button
-        onClick={() => setIsChatOpen(!isChatOpen)}
-        className="fixed bottom-6 right-6 bg-gradient-to-r from-cyan-500 to-blue-600 text-white w-16 h-16 rounded-full shadow-lg flex items-center justify-center z-50 hover:scale-110 transition-transform"
-      >
-        {isChatOpen ? <X className="w-8 h-8" /> : <MessageSquare className="w-8 h-8" />}
-      </button>
+        <div className="bg-white rounded-xl shadow-lg p-6">
+          <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
+            <DollarSign className="w-6 h-6 text-blue-500" /> Dự đoán chi phí du lịch (AI)
+          </h2>
 
-      {isChatOpen && (
-        <div className="fixed bottom-24 right-6 z-40 shadow-2xl rounded-lg overflow-hidden">
-          <ChatBox />
+          <div className="grid md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label className="block text-sm font-semibold mb-2">Điểm đi</label>
+              <input
+                type="text"
+                value={origin}
+                onChange={(e) => setOrigin(e.target.value)}
+                className="w-full px-4 py-3 border rounded-lg outline-none focus:ring-2 focus:ring-cyan-500"
+                placeholder="VD: TP. Hồ Chí Minh"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold mb-2">Điểm đến</label>
+              <input
+                type="text"
+                value={destination}
+                onChange={(e) => setDestination(e.target.value)}
+                className="w-full px-4 py-3 border rounded-lg outline-none focus:ring-2 focus:ring-cyan-500"
+                placeholder="VD: Đà Nẵng"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold mb-2">Ngày đi</label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="w-full px-4 py-3 border rounded-lg outline-none focus:ring-2 focus:ring-cyan-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold mb-2">Ngày về</label>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="w-full px-4 py-3 border rounded-lg outline-none focus:ring-2 focus:ring-cyan-500"
+                min={startDate || undefined}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold mb-2">Số ngày</label>
+              <input
+                type="number"
+                min="1"
+                value={days}
+                onChange={(e) => setDays(+e.target.value)}
+                className="w-full px-4 py-3 border rounded-lg outline-none focus:ring-2 focus:ring-cyan-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold mb-2">Số người</label>
+              <input
+                type="number"
+                min="1"
+                value={people}
+                onChange={(e) => setPeople(+e.target.value)}
+                className="w-full px-4 py-3 border rounded-lg outline-none focus:ring-2 focus:ring-cyan-500"
+              />
+            </div>
+          </div>
+
+          {err && (
+            <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">
+              {err}
+            </div>
+          )}
+
+          <div className="flex gap-3 mb-4">
+            <button
+              onClick={handleCostPrediction}
+              disabled={loading}
+              className="flex-1 bg-blue-500 text-white py-3 rounded-lg font-semibold hover:bg-blue-600 transition disabled:opacity-50"
+            >
+              {loading ? '🤖 AI đang tính...' : `🤖 Ước tính chi phí`}
+            </button>
+            <button
+              onClick={resetAll}
+              className="px-4 py-3 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
+            >
+              Xoá
+            </button>
+          </div>
+
+          {costPrediction && (
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="space-y-3">
+                <div className="flex justify-between p-3 bg-blue-50 rounded-lg">
+                  <span className="flex items-center gap-2 text-blue-700">
+                    <Navigation className="w-4 h-4" /> Di chuyển
+                  </span>
+                  <span className="font-bold">{costPrediction.transport?.toLocaleString()}đ</span>
+                </div>
+                <div className="flex justify-between p-3 bg-green-50 rounded-lg">
+                  <span className="flex items-center gap-2 text-green-700">
+                    <Building className="w-4 h-4" /> Khách sạn
+                  </span>
+                  <span className="font-bold">{costPrediction.hotel?.toLocaleString()}đ</span>
+                </div>
+                <div className="flex justify-between p-3 bg-yellow-50 rounded-lg">
+                  <span className="flex items-center gap-2 text-yellow-700">
+                    <Utensils className="w-4 h-4" /> Ăn uống
+                  </span>
+                  <span className="font-bold">{costPrediction.food?.toLocaleString()}đ</span>
+                </div>
+                <div className="flex justify-between p-3 bg-purple-50 rounded-lg">
+                  <span className="flex items-center gap-2 text-purple-700">
+                    <Ticket className="w-4 h-4" /> Vé tham quan
+                  </span>
+                  <span className="font-bold">{costPrediction.tickets?.toLocaleString()}đ</span>
+                </div>
+              </div>
+              <div className="bg-gradient-to-br from-cyan-500 to-blue-600 text-white rounded-xl p-6 text-center">
+                <p className="text-sm mb-2">Tổng chi phí dự kiến</p>
+                <p className="text-4xl font-bold mb-4">{costPrediction.total?.toLocaleString()}đ</p>
+                <p className="text-sm mb-1">So với giá tour</p>
+                <p className="text-2xl font-bold">{costPrediction.tourPrice?.toLocaleString()}đ</p>
+                <p className="text-xs opacity-90 mt-2">
+                  {origin} → {destination} ({days} ngày / {people} người)
+                </p>
+              </div>
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 };
+
+// Main App
+// *** CẬP NHẬT: Xử lý URL (F5) cho trang chi tiết ***
+ const App = () => {
+  const [currentPage, setCurrentPage] = useState('home');
+   const [selectedPlaceId, setSelectedPlaceId] = useState(null);
+   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [authUser, setAuthUser] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('authUser') || 'null'); } catch { return null; }
+  });
+  const [showLogin, setShowLogin] = useState(false);
+  const [showRegister, setShowRegister] = useState(false);
+
+   useEffect(() => {
+     const urlParams = new URLSearchParams(window.location.search);
+     const placeIdFromUrl = urlParams.get('place');
+     if (placeIdFromUrl) {
+       setSelectedPlaceId(parseInt(placeIdFromUrl));
+       setCurrentPage('details');
+     }
+   }, []);
+
+   useEffect(() => {
+     const url = new URL(window.location.href);
+     if (currentPage === 'details' && selectedPlaceId) {
+       url.searchParams.set('place', selectedPlaceId);
+       window.history.pushState({}, '', url);
+     } else {
+       url.searchParams.delete('place');
+       window.history.pushState({}, '', url);
+     }
+   }, [currentPage, selectedPlaceId]);
+
+  const handleLoginSuccess = (user) => {
+    setAuthUser(user);
+    localStorage.setItem('authUser', JSON.stringify(user));
+    setShowLogin(false);
+  };
+  const handleRegisterSuccess = (user) => {
+    setAuthUser(user);
+    localStorage.setItem('authUser', JSON.stringify(user));
+    setShowRegister(false);
+  };
+  const handleLogout = () => {
+    setAuthUser(null);
+    localStorage.removeItem('authUser');
+  };
+
+   return (
+     <div className="min-h-screen bg-white">
+       <NavBar
+         setCurrentPage={setCurrentPage}
+         setMobileMenuOpen={setMobileMenuOpen}
+         mobileMenuOpen={mobileMenuOpen}
+         setSelectedPlaceId={setSelectedPlaceId}
+        authUser={authUser}
+        onOpenLogin={() => setShowLogin(true)}
+        onOpenRegister={() => setShowRegister(true)}
+        onLogout={handleLogout}
+       />
+
+       {/* routes */}
+       {currentPage === 'home' && (
+  <HomePage setCurrentPage={setCurrentPage} setSelectedPlaceId={setSelectedPlaceId} />
+)}
+        {currentPage === 'explore' && <ExplorePage />}
+
+        {currentPage === 'tools' && <ToolsMenu setCurrentPage={setCurrentPage} />}
+        {currentPage === 'currency' && <CurrencyPage setCurrentPage={setCurrentPage} />}
+        {currentPage === 'translate' && <TranslatePage setCurrentPage={setCurrentPage} />}
+        {currentPage === 'cost' && <CostPage setCurrentPage={setCurrentPage} />}
+        {currentPage === 'directions' && <DirectionsPage setCurrentPage={setCurrentPage} />}
+
+        {currentPage === 'map' && <MapPage />}
+        {currentPage === 'details' && (
+          <DestinationDetailPage placeId={selectedPlaceId} setCurrentPage={setCurrentPage} />
+        )}
+
+       <Footer setCurrentPage={setCurrentPage} />
+
+       {/* Chat button */}
+       <button
+         onClick={() => setIsChatOpen(!isChatOpen)}
+         className="fixed bottom-6 right-6 bg-gradient-to-r from-cyan-500 to-blue-600 text-white w-16 h-16 rounded-full shadow-lg flex items-center justify-center z-50 hover:scale-110 transition-transform"
+       >
+         {isChatOpen ? <X className="w-8 h-8" /> : <MessageSquare className="w-8 h-8" />}
+       </button>
+       {isChatOpen && (
+         <div className="fixed bottom-24 right-6 z-40 shadow-2xl rounded-lg overflow-hidden">
+           <ChatBox />
+         </div>
+       )}
+
+      {/* Auth Modals */}
+      {showLogin && <LoginModal onClose={() => setShowLogin(false)} onSuccess={handleLoginSuccess} />}
+      {showRegister && <RegisterModal onClose={() => setShowRegister(false)} onSuccess={handleRegisterSuccess} />}
+     </div>
+   );
+ };
+
 
 export default App;

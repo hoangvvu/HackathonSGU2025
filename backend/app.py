@@ -286,6 +286,62 @@ def get_related_places():
             place['thumbnail'] = '[https://via.placeholder.com/300x200?text=No+Image](https://via.placeholder.com/300x200?text=No+Image)'
     return jsonify(places)
 
+# Helper insert trả về ID mới
+def execute_insert_return_id(sql, params=()):
+    conn = get_db_conn()
+    if not conn: return None
+    try:
+        cur = conn.cursor()
+        cur.execute(sql, params)
+        row = cur.fetchone()
+        new_id = int(row[0]) if row and row[0] is not None else None
+        conn.commit()
+        return new_id
+    except Exception as e:
+        print("❌ execute_insert_return_id:", e)
+        return None
+    finally:
+        try: conn.close()
+        except: pass
+
+# Đăng ký (DEMO: so sánh/mã hoá mật khẩu tối thiểu; production nên dùng bcrypt)
+@app.route("/api/register", methods=["POST"])
+def api_register():
+    data = request.get_json(force=True, silent=True) or {}
+    name = (data.get("name") or "").strip()
+    email = (data.get("email") or "").strip().lower()
+    password = (data.get("password") or "")
+    if not name or not email or not password:
+        return jsonify({"error": "Thiếu name/email/password"}), 400
+
+    # đã tồn tại?
+    exists = query_db("SELECT 1 AS ok FROM Users WHERE email = ?", (email,))
+    if exists:
+        return jsonify({"error": "Email đã tồn tại"}), 409
+
+    new_id = execute_insert_return_id(
+        "INSERT INTO Users (name,email,password,role) OUTPUT INSERTED.id VALUES (?,?,?,'user')",
+        (name, email, password)
+    )
+    if not new_id:
+        return jsonify({"error": "Không thể tạo tài khoản"}), 500
+    return jsonify({"id": new_id, "name": name, "email": email, "role": "user"})
+
+# Đăng nhập (DEMO: so sánh plain-text với Users.password)
+@app.route("/api/login", methods=["POST"])
+def api_login():
+    data = request.get_json(force=True, silent=True) or {}
+    email = (data.get("email") or "").strip().lower()
+    password = (data.get("password") or "")
+    if not email or not password:
+        return jsonify({"error": "Thiếu email/password"}), 400
+
+    rows = query_db("SELECT TOP 1 id,name,email,password,role FROM Users WHERE email = ?", (email,))
+    if not rows or rows[0].get("password") != password:
+        return jsonify({"error": "Sai email hoặc mật khẩu"}), 401
+
+    u = rows[0]
+    return jsonify({"id": int(u["id"]), "name": u["name"], "email": u["email"], "role": u.get("role", "user")})
 
 # --- Khai báo chính ---
 if __name__ == "__main__":
