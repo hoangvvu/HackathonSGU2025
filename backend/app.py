@@ -6,13 +6,23 @@ import os
 import pyodbc
 import re  # 👈 THÊM MỚI: Để xử lý JSON từ AI
 import json # 👈 THÊM MỚI: Để xử lý JSON từ AI
+from auth import auth_bp   # 👈 import blueprint từ file trên
+from werkzeug.security import generate_password_hash, check_password_hash
 
 # Load biến môi trường
 load_dotenv()
 
 app = Flask(__name__)
+app.register_blueprint(auth_bp)  # gắn /api/login, /api/register
+
 # Đã xử lý CORS
-CORS(app, resources={r"/api/*": {"origins": ["http://localhost:3000", "http://127.0.0.1:3000"]}})
+CORS(app, resources={
+    r"/api/*": {
+        "origins": ["http://localhost:3000", "http://127.0.0.1:3000"],
+        "methods": ["GET", "POST", "PUT", "DELETE"],
+        "allow_headers": ["Content-Type"]
+    }
+})
 
 # --- CẤU HÌNH GEMINI AI ---
 API_KEY = os.getenv("GEMINI_API_KEY")
@@ -304,45 +314,15 @@ def execute_insert_return_id(sql, params=()):
         try: conn.close()
         except: pass
 
-# Đăng ký (DEMO: so sánh/mã hoá mật khẩu tối thiểu; production nên dùng bcrypt)
-@app.route("/api/register", methods=["POST"])
-def api_register():
-    data = request.get_json(force=True, silent=True) or {}
-    name = (data.get("name") or "").strip()
-    email = (data.get("email") or "").strip().lower()
-    password = (data.get("password") or "")
-    if not name or not email or not password:
-        return jsonify({"error": "Thiếu name/email/password"}), 400
+# Route test
+@app.route('/')
+def index():
+    return {'message': 'Travel AI API is running', 'status': 'ok'}
 
-    # đã tồn tại?
-    exists = query_db("SELECT 1 AS ok FROM Users WHERE email = ?", (email,))
-    if exists:
-        return jsonify({"error": "Email đã tồn tại"}), 409
+# Route health check
+@app.route('/health')
+def health():
+    return {'status': 'healthy'}
 
-    new_id = execute_insert_return_id(
-        "INSERT INTO Users (name,email,password,role) OUTPUT INSERTED.id VALUES (?,?,?,'user')",
-        (name, email, password)
-    )
-    if not new_id:
-        return jsonify({"error": "Không thể tạo tài khoản"}), 500
-    return jsonify({"id": new_id, "name": name, "email": email, "role": "user"})
-
-# Đăng nhập (DEMO: so sánh plain-text với Users.password)
-@app.route("/api/login", methods=["POST"])
-def api_login():
-    data = request.get_json(force=True, silent=True) or {}
-    email = (data.get("email") or "").strip().lower()
-    password = (data.get("password") or "")
-    if not email or not password:
-        return jsonify({"error": "Thiếu email/password"}), 400
-
-    rows = query_db("SELECT TOP 1 id,name,email,password,role FROM Users WHERE email = ?", (email,))
-    if not rows or rows[0].get("password") != password:
-        return jsonify({"error": "Sai email hoặc mật khẩu"}), 401
-
-    u = rows[0]
-    return jsonify({"id": int(u["id"]), "name": u["name"], "email": u["email"], "role": u.get("role", "user")})
-
-# --- Khai báo chính ---
-if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+if __name__ == '__main__':
+    app.run(debug=True, host='127.0.0.1', port=5000)

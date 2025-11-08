@@ -1,6 +1,12 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
-import { MapPin, Search, Globe, Camera, Star, Menu, X, Play, Navigation, MessageSquare, Paperclip, DollarSign, Cloud, Languages, Map, Compass, Sun, MapPinned, Users, ChevronsLeft, Building, Utensils, Ticket, LogIn, UserPlus, LogOut, User } from 'lucide-react';
+import {
+  MapPin, Search, Globe, Camera, Star, Menu, X, Play, Navigation, MessageSquare, Paperclip,
+  DollarSign, Cloud, Languages, Map, Compass, Sun, MapPinned, Users, ChevronsLeft, Building,
+  Utensils, Ticket, LogIn, UserPlus, LogOut, User, Lock,
+  // ✅ thêm icon mới cho Admin
+  LayoutGrid, Shield, TrendingUp, BarChart3
+} from 'lucide-react';
 import 'aframe';
 
 // *** Import Leaflet và CSS ***
@@ -11,101 +17,12 @@ import L from 'leaflet';
 // *** CẬP NHẬT: Import file ExplorePage mới ***
 import ExplorePage from '../src/components/ExplorePage'; 
 // *******************************************
-
+import { LoginModal, RegisterModal } from '../src/components/AuthModals';
 
 // *** Sửa lỗi icon marker mặc định của Leaflet ***
 import iconUrl from 'leaflet/dist/images/marker-icon.png';
 import iconShadowUrl from 'leaflet/dist/images/marker-shadow.png';
-
-/* === NEW: Auth Modals === */
-const LoginModal = ({ onClose, onSuccess }) => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [err, setErr] = useState("");
-
-  const submit = async () => {
-    setErr(""); setLoading(true);
-    try {
-      const res = await axios.post("http://127.0.0.1:5000/api/login", { email, password });
-      onSuccess(res.data); // {id,name,email,role}
-    } catch (e) {
-      setErr(e?.response?.data?.error || "Không thể đăng nhập.");
-    } finally { setLoading(false); }
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black/60 z-[200] flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl w-full max-w-md overflow-hidden">
-        <div className="px-6 py-4 border-b flex items-center justify-between">
-          <h3 className="font-bold text-lg flex items-center gap-2"><LogIn className="w-5 h-5" /> Đăng nhập</h3>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700"><X className="w-5 h-5" /></button>
-        </div>
-        <div className="p-6 space-y-4">
-          {err && <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md p-2">{err}</div>}
-          <div>
-            <label className="block text-sm font-semibold mb-1">Email</label>
-            <input value={email} onChange={e=>setEmail(e.target.value)} type="email" className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-cyan-500" placeholder="you@example.com" />
-          </div>
-          <div>
-            <label className="block text-sm font-semibold mb-1">Mật khẩu</label>
-            <input value={password} onChange={e=>setPassword(e.target.value)} type="password" className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-cyan-500" placeholder="••••••••" />
-          </div>
-          <button onClick={submit} disabled={loading} className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white py-3 rounded-lg font-semibold hover:opacity-90 disabled:opacity-50">
-            {loading ? "Đang xử lý..." : "Đăng nhập"}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const RegisterModal = ({ onClose, onSuccess }) => {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [err, setErr] = useState("");
-
-  const submit = async () => {
-    setErr(""); setLoading(true);
-    try {
-      const res = await axios.post("http://127.0.0.1:5000/api/register", { name, email, password });
-      onSuccess(res.data); // {id,name,email,role}
-    } catch (e) {
-      setErr(e?.response?.data?.error || "Không thể đăng ký.");
-    } finally { setLoading(false); }
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black/60 z-[200] flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl w-full max-w-md overflow-hidden">
-        <div className="px-6 py-4 border-b flex items-center justify-between">
-          <h3 className="font-bold text-lg flex items-center gap-2"><UserPlus className="w-5 h-5" /> Đăng ký</h3>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700"><X className="w-5 h-5" /></button>
-        </div>
-        <div className="p-6 space-y-4">
-          {err && <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-md p-2">{err}</div>}
-          <div>
-            <label className="block text-sm font-semibold mb-1">Họ tên</label>
-            <input value={name} onChange={e=>setName(e.target.value)} className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-cyan-500" placeholder="Nguyễn Văn A" />
-          </div>
-          <div>
-            <label className="block text-sm font-semibold mb-1">Email</label>
-            <input value={email} onChange={e=>setEmail(e.target.value)} type="email" className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-cyan-500" placeholder="you@example.com" />
-          </div>
-          <div>
-            <label className="block text-sm font-semibold mb-1">Mật khẩu</label>
-            <input value={password} onChange={e=>setPassword(e.target.value)} type="password" className="w-full px-3 py-2 border rounded-lg outline-none focus:ring-2 focus:ring-cyan-500" placeholder="••••••••" />
-          </div>
-          <button onClick={submit} disabled={loading} className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 text-white py-3 rounded-lg font-semibold hover:opacity-90 disabled:opacity-50">
-            {loading ? "Đang xử lý..." : "Tạo tài khoản"}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
+import ProfileModal from "./components/ProfileModal";
 
 let DefaultIcon = L.icon({
     iconUrl: iconUrl,
@@ -114,6 +31,8 @@ let DefaultIcon = L.icon({
     popupAnchor: [1, -34], 
     shadowSize: [41, 41] 
 });
+
+L.Marker.prototype.options.icon = DefaultIcon;
 
 L.Marker.prototype.options.icon = DefaultIcon;
 // ************************************************
@@ -146,48 +65,65 @@ const NavBar = ({ setCurrentPage, setMobileMenuOpen, mobileMenuOpen, setSelected
             <button onClick={() => navigate('explore')} className="hover:text-yellow-200 transition">Khám phá</button>
             <button onClick={() => navigate('tools')} className="hover:text-yellow-200 transition">Công cụ</button>
             <button onClick={() => navigate('map')} className="hover:text-yellow-200 transition">Bản đồ</button>
+            {authUser && authUser.role === 'admin' && (
+          <button
+            onClick={() => setCurrentPage('admin')}
+            className="flex items-center gap-2 px-3 py-2 rounded-full bg-white/10 hover:bg-white/20 transition"
+            title="Trang Admin"
+          >
+            🧭 Admin
+          </button>
+)}
           </div>
 
           {/* Right: Auth buttons (desktop) */}
-          <div className="hidden md:flex items-center gap-3">
-            {!authUser ? (
-              <>
-                <button
-                  onClick={onOpenLogin}
-                  className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 transition"
-                  title="Đăng nhập"
-                >
-                  <LogIn className="w-4 h-4" /> Đăng nhập
-                </button>
-                <button
-                  onClick={onOpenRegister}
-                  className="flex items-center gap-2 px-4 py-2 rounded-full bg-yellow-400 text-gray-900 font-semibold hover:bg-yellow-300 transition"
-                  title="Đăng ký"
-                >
-                  <UserPlus className="w-4 h-4" /> Đăng ký
-                </button>
-              </>
-            ) : (
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-full">
-                  <div className="bg-white text-cyan-600 w-8 h-8 rounded-full flex items-center justify-center font-bold">
-                    {authUser.name?.[0]?.toUpperCase() || authUser.email?.[0]?.toUpperCase()}
-                  </div>
-                  <div className="text-sm">
-                    <div className="font-semibold leading-4">{authUser.name || 'Người dùng'}</div>
-                    <div className="text-white/80 text-xs leading-4">{authUser.email}</div>
-                  </div>
-                </div>
-                <button
-                  onClick={onLogout}
-                  className="flex items-center gap-2 px-3 py-2 rounded-full bg-white/10 hover:bg-white/20 transition"
-                  title="Đăng xuất"
-                >
-                  <LogOut className="w-4 h-4" /> Đăng xuất
-                </button>
-              </div>
-            )}
+          {/* Right: Auth buttons (desktop) */}
+          
+<div className="hidden md:flex items-center gap-3">
+  {!authUser ? (
+    <>
+      <button
+        onClick={onOpenLogin}
+        className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 transition"
+      >
+        <LogIn className="w-4 h-4" /> Đăng nhập
+      </button>
+      <button
+        onClick={onOpenRegister}
+        className="flex items-center gap-2 px-4 py-2 rounded-full bg-yellow-400 text-gray-900 font-semibold hover:bg-yellow-300 transition"
+      >
+        <UserPlus className="w-4 h-4" /> Đăng ký
+      </button>
+    </>
+  ) : (
+    <>
+      <div className="flex items-center gap-3 bg-white/10 px-3 py-1.5 rounded-full">
+        <div className="bg-white text-cyan-600 w-8 h-8 rounded-full flex items-center justify-center font-bold">
+          {(authUser?.name?.[0] ||
+            authUser?.username?.[0] ||
+            authUser?.email?.[0] ||
+            'U'
+          ).toUpperCase()}
+        </div>
+        <div className="text-sm leading-tight">
+          <div className="font-semibold leading-4">
+            {authUser?.name || authUser?.username || 'Người dùng'}
           </div>
+          <div className="text-white/80 text-xs leading-4">{authUser?.email}</div>
+        </div>
+      </div>
+          
+      <button
+        onClick={onLogout}
+        className="flex items-center gap-2 px-3 py-2 rounded-full bg-white/10 hover:bg-white/20 transition"
+        title="Đăng xuất"
+      >
+        <LogOut className="w-4 h-4" /> Đăng xuất
+      </button>
+    </>
+  )}
+</div>
+
 
           {/* Mobile menu button */}
           <button className="md:hidden" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
@@ -202,15 +138,53 @@ const NavBar = ({ setCurrentPage, setMobileMenuOpen, mobileMenuOpen, setSelected
             <button onClick={() => navigate('explore')} className="block w-full text-left py-2 hover:bg-cyan-600 px-2 rounded">Khám phá</button>
             <button onClick={() => navigate('tools')} className="block w-full text-left py-2 hover:bg-cyan-600 px-2 rounded">Công cụ</button>
             <button onClick={() => navigate('map')} className="block w-full text-left py-2 hover:bg-cyan-600 px-2 rounded">Bản đồ</button>
+            {authUser?.role === 'admin' && (
+              <button
+                onClick={() => { setCurrentPage('admin'); setMobileMenuOpen(false); }}
+                className="block w-full text-left py-2 hover:bg-cyan-600 px-2 rounded"
+              >
+                🧭 Admin
+              </button>
+            )}
+
 
             {!authUser ? (
-              <div className="pt-2 flex gap-2">
-                <button onClick={() => { setMobileMenuOpen(false); onOpenLogin(); }} className="flex-1 bg-white/10 py-2 rounded-lg flex items-center justify-center gap-2"><LogIn className="w-4 h-4" /> Đăng nhập</button>
-                <button onClick={() => { setMobileMenuOpen(false); onOpenRegister(); }} className="flex-1 bg-yellow-400 text-gray-900 py-2 rounded-lg font-semibold flex items-center justify-center gap-2"><UserPlus className="w-4 h-4" /> Đăng ký</button>
-              </div>
-            ) : (
-              <button onClick={() => { setMobileMenuOpen(false); onLogout(); }} className="w-full bg-white/10 py-2 rounded-lg flex items-center justify-center gap-2"><LogOut className="w-4 h-4" /> Đăng xuất</button>
-            )}
+  <div className="pt-2 flex gap-2">
+    <button
+      onClick={() => { setMobileMenuOpen(false); onOpenLogin(); }}
+      className="flex-1 bg-white/10 py-2 rounded-lg flex items-center justify-center gap-2"
+    >
+      <LogIn className="w-4 h-4" /> Đăng nhập
+    </button>
+    <button
+      onClick={() => { setMobileMenuOpen(false); onOpenRegister(); }}
+      className="flex-1 bg-yellow-400 text-gray-900 py-2 rounded-lg font-semibold flex items-center justify-center gap-2"
+    >
+      <UserPlus className="w-4 h-4" /> Đăng ký
+    </button>
+  </div>
+) : (
+  <div className="space-y-2 pt-2">
+    <button
+      onClick={() => { setMobileMenuOpen(false); setShowProfile(true); }}
+      className="w-full bg-white/10 py-2 rounded-lg flex items-center justify-center gap-2 hover:bg-white/20 transition"
+    >
+      <User className="w-4 h-4" /> Hồ sơ
+    </button>
+    <button
+      onClick={() => { setMobileMenuOpen(false); setShowChangePw(true); }}
+      className="w-full bg-white/10 py-2 rounded-lg flex items-center justify-center gap-2 hover:bg-white/20 transition"
+    >
+      <Lock className="w-4 h-4" /> Đổi mật khẩu
+    </button>
+    <button
+      onClick={() => { setMobileMenuOpen(false); onLogout(); }}
+      className="w-full bg-white/10 py-2 rounded-lg flex items-center justify-center gap-2 hover:bg-white/20 transition"
+    >
+      <LogOut className="w-4 h-4" /> Đăng xuất
+    </button>
+  </div>
+)}
           </div>
         )}
       </div>
@@ -401,9 +375,6 @@ const HomePage = ({ setCurrentPage, setSelectedPlaceId }) => {
                 {loading ? '🔍 Đang tìm...' : 'Tìm kiếm'}
               </button>
             </div>
-            <p className="text-sm text-center text-white/80">
-              💡 Tìm kiếm địa điểm trực tiếp từ cơ sở dữ liệu
-            </p>
           </div>
 
           {/* Kết quả tìm kiếm */}
@@ -1127,7 +1098,261 @@ const MapPage = () => {
     </div>
   );
 };
+   // ===== ADMIN COMPONENTS (nhẹ, phù hợp hệ thống hiện tại) =====
+const AdminStat = ({ icon: Icon, title, value, sub, tone = 'blue' }) => {
+  const tones = {
+    blue:  {bg:'bg-blue-100',  text:'text-blue-600'},
+    green: {bg:'bg-green-100', text:'text-green-600'},
+    yellow:{bg:'bg-yellow-100',text:'text-yellow-600'},
+    purple:{bg:'bg-purple-100',text:'text-purple-600'},
+  };
+  const t = tones[tone] || tones.blue;
+  return (
+    <div className="p-6 rounded-xl border bg-white hover:shadow-lg transition">
+      <div className="flex items-center justify-between mb-3">
+        <div className={`p-3 rounded-lg ${t.bg}`}>
+          <Icon className={`w-6 h-6 ${t.text}`} />
+        </div>
+      </div>
+      <div className="text-sm text-gray-500 mb-1">{title}</div>
+      <div className="text-3xl font-bold text-gray-800">{value}</div>
+      {sub && <div className="text-xs text-gray-500 mt-2">{sub}</div>}
+    </div>
+  );
+};
 
+const AdminDashboard = () => {
+  const cards = [
+    { title: "Tổng người dùng", value: "2,847", sub: "+12.5% tháng này", icon: Users, tone: "blue" },
+    { title: "Địa điểm", value: "156", sub: "8 mới tuần này", icon: MapPin, tone: "green" },
+    { title: "Đánh giá", value: "4,521", sub: "TB 4.2⭐", icon: Star, tone: "yellow" },
+    { title: "Lượt tìm kiếm", value: "18.2K", sub: "+8.3% so tuần trước", icon: TrendingUp, tone: "purple" },
+  ];
+  return (
+    <div className="p-4 lg:p-6 space-y-6">
+      <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {cards.map((c,i) => <AdminStat key={i} {...c} />)}
+      </div>
+
+      <div className="rounded-xl border bg-white overflow-hidden">
+        <div className="p-4 border-b font-semibold flex items-center gap-2">
+          <Search className="w-5 h-5" /> Địa điểm được tìm kiếm nhiều
+        </div>
+        <div className="p-4 space-y-3">
+          {[
+            { name: "Phú Quốc", searches: 8420, trend: "+15%" },
+            { name: "Đà Lạt", searches: 7230, trend: "+8%" },
+            { name: "Hạ Long", searches: 6180, trend: "+12%" },
+            { name: "Nha Trang", searches: 5940, trend: "+5%" },
+            { name: "Đà Nẵng", searches: 5710, trend: "+10%" },
+          ].map((d, i) => (
+            <div key={i} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-cyan-500 text-white rounded-full flex items-center justify-center font-bold">{i + 1}</div>
+                <div>
+                  <p className="font-semibold">{d.name}</p>
+                  <p className="text-xs text-gray-500">{d.searches.toLocaleString()} lượt</p>
+                </div>
+              </div>
+              <span className="text-green-600 font-semibold text-sm">{d.trend}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const AdminLocations = () => {
+  const [locations] = useState([
+    { id: 1, name: "Vịnh Hạ Long", category: "Thiên nhiên", rating: 4.8, reviews: 1240, status: "active" },
+    { id: 2, name: "Phố cổ Hội An", category: "Văn hóa", rating: 4.9, reviews: 2130, status: "active" },
+    { id: 3, name: "Đảo Phú Quốc", category: "Nghỉ dưỡng", rating: 4.7, reviews: 980, status: "active" },
+  ]);
+  return (
+    <div className="p-4 lg:p-6 space-y-4">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold flex items-center gap-2"><MapPin className="w-6 h-6" /> Quản lý Địa điểm</h1>
+        <button className="px-4 py-2 rounded-lg bg-cyan-500 text-white hover:bg-cyan-600 transition">➕ Thêm địa điểm</button>
+      </div>
+      <div className="rounded-xl border bg-white overflow-hidden">
+        <table className="w-full text-sm">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="text-left px-4 py-3">Tên</th>
+              <th className="text-left px-4 py-3">Danh mục</th>
+              <th className="text-center px-4 py-3">Đánh giá</th>
+              <th className="text-center px-4 py-3">Reviews</th>
+              <th className="text-center px-4 py-3">Trạng thái</th>
+              <th className="text-center px-4 py-3">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            {locations.map((loc) => (
+              <tr key={loc.id} className="border-t hover:bg-gray-50">
+                <td className="px-4 py-3 font-semibold">{loc.name}</td>
+                <td className="px-4 py-3"><span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">{loc.category}</span></td>
+                <td className="px-4 py-3 text-center">
+                  <div className="flex items-center justify-center gap-1">
+                    <Star className="w-4 h-4 text-yellow-500 fill-current" />
+                    <span className="font-semibold">{loc.rating}</span>
+                  </div>
+                </td>
+                <td className="px-4 py-3 text-center text-gray-600">{loc.reviews}</td>
+                <td className="px-4 py-3 text-center"><span className="px-2 py-1 bg-green-100 text-green-700 rounded text-xs">Hoạt động</span></td>
+                <td className="px-4 py-3 text-center">
+                  <button className="px-3 py-1 text-xs rounded border hover:bg-gray-100 mr-2">Sửa</button>
+                  <button className="px-3 py-1 text-xs rounded border border-red-300 text-red-600 hover:bg-red-50">Xóa</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+const AdminReviews = () => {
+  const reviews = [
+    { id: 1, user: "Nguyễn Văn A", location: "Phú Quốc", rating: 5, comment: "Cực kỳ tuyệt vời!", date: "2025-01-05", status: "approved" },
+    { id: 2, user: "Trần Thị B", location: "Đà Lạt", rating: 4, comment: "Đẹp nhưng hơi đông", date: "2025-01-04", status: "pending" },
+  ];
+  return (
+    <div className="p-4 lg:p-6 space-y-4">
+      <h1 className="text-2xl font-bold flex items-center gap-2"><Star className="w-6 h-6" /> Quản lý Đánh giá</h1>
+      <div className="space-y-4">
+        {reviews.map((r) => (
+          <div key={r.id} className="bg-white border rounded-xl p-4 hover:shadow-lg transition">
+            <div className="flex justify-between items-start mb-3">
+              <div>
+                <p className="font-semibold">{r.user}</p>
+                <p className="text-sm text-gray-500">{r.location} • {r.date}</p>
+              </div>
+              <div className="flex items-center gap-1">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className={`w-4 h-4 ${i < r.rating ? 'text-yellow-500 fill-current' : 'text-gray-300'}`} />
+                ))}
+              </div>
+            </div>
+            <p className="text-gray-700 mb-3">{r.comment}</p>
+            <div className="flex gap-2">
+              {r.status === 'pending' ? (
+                <>
+                  <button className="px-4 py-2 rounded-lg bg-green-500 text-white text-sm hover:bg-green-600">✅ Duyệt</button>
+                  <button className="px-4 py-2 rounded-lg bg-red-500 text-white text-sm hover:bg-red-600">❌ Từ chối</button>
+                </>
+              ) : <span className="px-3 py-1 bg-green-100 text-green-700 rounded text-xs">Đã duyệt</span>}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const AdminUsers = () => {
+  const users = [
+    { id: 1, name: "Nguyễn Văn A", email: "a@gmail.com", role: "admin", status: "active", joined: "2024-01-15" },
+    { id: 2, name: "Trần Thị B", email: "b@gmail.com", role: "user", status: "active", joined: "2024-03-20" },
+  ];
+  return (
+    <div className="p-4 lg:p-6 space-y-4">
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold flex items-center gap-2">👥 Quản lý Người dùng</h1>
+        <button className="px-4 py-2 rounded-lg bg-blue-500 text-white hover:bg-blue-600">➕ Thêm user</button>
+      </div>
+      <div className="rounded-xl border bg-white overflow-hidden">
+        <table className="w-full text-sm">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="text-left px-4 py-3">Họ tên</th>
+              <th className="text-left px-4 py-3">Email</th>
+              <th className="text-center px-4 py-3">Vai trò</th>
+              <th className="text-center px-4 py-3">Trạng thái</th>
+              <th className="text-center px-4 py-3">Ngày tham gia</th>
+            </tr>
+          </thead>
+          <tbody>
+            {users.map((u) => (
+              <tr key={u.id} className="border-t hover:bg-gray-50">
+                <td className="px-4 py-3 font-semibold">{u.name}</td>
+                <td className="px-4 py-3 text-gray-600">{u.email}</td>
+                <td className="px-4 py-3 text-center">
+                  <span className={`px-2 py-1 rounded text-xs ${
+                    u.role === 'admin' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'
+                  }`}>{u.role}</span>
+                </td>
+                <td className="px-4 py-3 text-center">
+                  <span className={`px-2 py-1 rounded text-xs ${
+                    u.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'
+                  }`}>{u.status === 'active' ? 'Hoạt động' : 'Bị khóa'}</span>
+                </td>
+                <td className="px-4 py-3 text-center text-gray-600">{u.joined}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
+const AdminLayout = ({ authUser }) => {
+  const [open, setOpen] = useState(false);
+  const [tab, setTab] = useState('dashboard');
+  const tabs = [
+    { key: "dashboard", label: "📊 Tổng quan", icon: LayoutGrid },
+    { key: "locations", label: "📍 Địa điểm", icon: MapPin },
+    { key: "reviews",   label: "⭐ Đánh giá", icon: Star },
+    { key: "users",     label: "👥 Người dùng", icon: Shield },
+  ];
+  if (!authUser || authUser.role !== 'admin') {
+    return (
+      <div className="pt-24 pb-12 min-h-screen bg-gray-50">
+        <div className="container mx-auto px-4">
+          <div className="max-w-lg mx-auto bg-white border rounded-2xl p-6 text-center">
+            <h2 className="text-2xl font-bold mb-2">⛔ Không có quyền truy cập</h2>
+            <p className="text-gray-600">Vui lòng đăng nhập bằng tài khoản admin.</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="pt-16 min-h-screen bg-gray-50">
+      <div className={`fixed z-40 top-16 left-0 bottom-0 w-72 bg-white border-r transition-transform ${open ? "translate-x-0" : "-translate-x-full"} md:translate-x-0`}>
+        <div className="p-4 font-bold text-lg border-b bg-gradient-to-r from-cyan-500 to-blue-600 text-white">
+          🎯 Admin Panel
+        </div>
+        <nav className="p-3 space-y-1">
+          {tabs.map(t => (
+            <button key={t.key} onClick={() => { setTab(t.key); setOpen(false); }} className={`w-full text-left px-4 py-3 rounded-lg transition flex items-center gap-3 ${
+              tab === t.key ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-lg" : "text-gray-700 hover:bg-gray-100"
+            }`}>
+              <t.icon className="w-5 h-5" />
+              <span className="font-medium">{t.label}</span>
+            </button>
+          ))}
+        </nav>
+      </div>
+
+      <div className="sticky top-16 z-30 bg-white border-b px-4 h-14 flex items-center gap-3 md:pl-76">
+        <button onClick={() => setOpen(true)} className="p-2 rounded hover:bg-gray-100 md:hidden">
+          <Menu size={20} />
+        </button>
+        <div className="font-semibold text-lg">{tabs.find(x => x.key === tab)?.label}</div>
+      </div>
+
+      <div className="md:pl-72">
+        {tab === 'dashboard' && <AdminDashboard />}
+        {tab === 'locations' && <AdminLocations />}
+        {tab === 'reviews' && <AdminReviews />}
+        {tab === 'users' && <AdminUsers />}
+      </div>
+    </div>
+  );
+};
 
 // Trang chi tiết địa điểm (Destination Detail Page)
 const DestinationDetailPage = ({ placeId, setCurrentPage }) => {
@@ -1935,106 +2160,266 @@ JSON:
     </div>
   );
 };
+const ProfileModal = ({ user, onClose, onSaved }) => {
+  const [name, setName] = React.useState(user?.name || "");
+  const [username, setUsername] = React.useState(user?.username || "");
+  const [email, setEmail] = React.useState(user?.email || "");
+  const [saving, setSaving] = React.useState(false);
+  const [err, setErr] = React.useState("");
 
-// Main App
-// *** CẬP NHẬT: Xử lý URL (F5) cho trang chi tiết ***
- const App = () => {
+  const submit = async (e) => {
+    e.preventDefault();
+    setErr("");
+    if (!name.trim() || !username.trim() || !email.trim()) {
+      setErr("Vui lòng nhập đủ họ tên / username / email");
+      return;
+    }
+    try {
+      setSaving(true);
+      const { data } = await axios.put("http://127.0.0.1:5000/api/profile", {
+        id: user.id, name: name.trim(), username: username.trim().toLowerCase(), email: email.trim().toLowerCase(),
+      });
+      onSaved?.(data.user);
+      onClose?.();
+    } catch (e) {
+      setErr(e?.response?.data?.error || "Lỗi cập nhật hồ sơ");
+    } finally { setSaving(false); }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
+        <div className="px-6 py-4 border-b flex items-center justify-between">
+          <h3 className="font-bold text-lg">Hồ sơ cá nhân</h3>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">✕</button>
+        </div>
+        <form onSubmit={submit} className="p-6 space-y-4">
+          {err && <div className="p-2 text-sm rounded bg-red-50 text-red-700 border">{err}</div>}
+          <div>
+            <label className="text-sm font-semibold">Họ và tên</label>
+            <input className="w-full mt-1 px-3 py-2 border rounded-lg" value={name} onChange={e=>setName(e.target.value)} />
+          </div>
+          <div>
+            <label className="text-sm font-semibold">Tên đăng nhập</label>
+            <input className="w-full mt-1 px-3 py-2 border rounded-lg" value={username} onChange={e=>setUsername(e.target.value)} />
+          </div>
+          <div>
+            <label className="text-sm font-semibold">Email</label>
+            <input type="email" className="w-full mt-1 px-3 py-2 border rounded-lg" value={email} onChange={e=>setEmail(e.target.value)} />
+          </div>
+          <div className="pt-2 flex justify-end gap-2">
+            <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg border">Hủy</button>
+            <button disabled={saving} className="px-4 py-2 rounded-lg bg-cyan-600 text-white hover:bg-cyan-700 disabled:opacity-50">
+              {saving ? "Đang lưu..." : "Lưu hồ sơ"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+const ChangePasswordModal = ({ user, onClose }) => {
+  const [oldPw, setOldPw] = React.useState("");
+  const [newPw, setNewPw] = React.useState("");
+  const [confirmPw, setConfirmPw] = React.useState("");
+  const [saving, setSaving] = React.useState(false);
+  const [msg, setMsg] = React.useState("");
+  const [err, setErr] = React.useState("");
+
+  const submit = async (e) => {
+    e.preventDefault();
+    setErr(""); setMsg("");
+    if (!oldPw || !newPw) return setErr("Vui lòng nhập đủ mật khẩu cũ/mới");
+    if (newPw !== confirmPw) return setErr("Xác nhận mật khẩu không khớp");
+    try {
+      setSaving(true);
+      await axios.put("http://127.0.0.1:5000/api/change-password", {
+        id: user.id, old_password: oldPw, new_password: newPw,
+      });
+      setMsg("Đổi mật khẩu thành công");
+      setOldPw(""); setNewPw(""); setConfirmPw("");
+    } catch (e) {
+      setErr(e?.response?.data?.error || "Lỗi đổi mật khẩu");
+    } finally { setSaving(false); }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+        <div className="px-6 py-4 border-b flex items-center justify-between">
+          <h3 className="font-bold text-lg">Đổi mật khẩu</h3>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">✕</button>
+        </div>
+        <form onSubmit={submit} className="p-6 space-y-4">
+          {err && <div className="p-2 text-sm rounded bg-red-50 text-red-700 border">{err}</div>}
+          {msg && <div className="p-2 text-sm rounded bg-green-50 text-green-700 border">{msg}</div>}
+          <div>
+            <label className="text-sm font-semibold">Mật khẩu cũ</label>
+            <input type="password" className="w-full mt-1 px-3 py-2 border rounded-lg" value={oldPw} onChange={e=>setOldPw(e.target.value)} />
+          </div>
+          <div>
+            <label className="text-sm font-semibold">Mật khẩu mới</label>
+            <input type="password" className="w-full mt-1 px-3 py-2 border rounded-lg" value={newPw} onChange={e=>setNewPw(e.target.value)} />
+          </div>
+          <div>
+            <label className="text-sm font-semibold">Xác nhận mật khẩu</label>
+            <input type="password" className="w-full mt-1 px-3 py-2 border rounded-lg" value={confirmPw} onChange={e=>setConfirmPw(e.target.value)} />
+          </div>
+          <div className="pt-2 flex justify-end gap-2">
+            <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg border">Đóng</button>
+            <button disabled={saving} className="px-4 py-2 rounded-lg bg-cyan-600 text-white hover:bg-cyan-700 disabled:opacity-50">
+              {saving ? "Đang đổi..." : "Đổi mật khẩu"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+const App = () => {
   const [currentPage, setCurrentPage] = useState('home');
-   const [selectedPlaceId, setSelectedPlaceId] = useState(null);
-   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [selectedPlaceId, setSelectedPlaceId] = useState(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+
+const handleProfileSaved = (newUser) => {
+  setAuthUser(newUser);
+  localStorage.setItem("authUser", JSON.stringify(newUser));
+}
+  // Auth state
   const [authUser, setAuthUser] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('authUser') || 'null'); } catch { return null; }
+    try { 
+      return JSON.parse(localStorage.getItem('authUser') || 'null'); 
+    } catch { 
+      return null; 
+    }
   });
   const [showLogin, setShowLogin] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
 
-   useEffect(() => {
-     const urlParams = new URLSearchParams(window.location.search);
-     const placeIdFromUrl = urlParams.get('place');
-     if (placeIdFromUrl) {
-       setSelectedPlaceId(parseInt(placeIdFromUrl));
-       setCurrentPage('details');
-     }
-   }, []);
+  // Xử lý URL cho trang chi tiết
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const placeIdFromUrl = urlParams.get('place');
+    if (placeIdFromUrl) {
+      setSelectedPlaceId(parseInt(placeIdFromUrl));
+      setCurrentPage('details');
+    }
+  }, []);
 
-   useEffect(() => {
-     const url = new URL(window.location.href);
-     if (currentPage === 'details' && selectedPlaceId) {
-       url.searchParams.set('place', selectedPlaceId);
-       window.history.pushState({}, '', url);
-     } else {
-       url.searchParams.delete('place');
-       window.history.pushState({}, '', url);
-     }
-   }, [currentPage, selectedPlaceId]);
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (currentPage === 'details' && selectedPlaceId) {
+      url.searchParams.set('place', selectedPlaceId);
+      window.history.pushState({}, '', url);
+    } else {
+      url.searchParams.delete('place');
+      window.history.pushState({}, '', url);
+    }
+  }, [currentPage, selectedPlaceId]);
 
-  const handleLoginSuccess = (user) => {
-    setAuthUser(user);
-    localStorage.setItem('authUser', JSON.stringify(user));
-    setShowLogin(false);
-  };
-  const handleRegisterSuccess = (user) => {
-    setAuthUser(user);
-    localStorage.setItem('authUser', JSON.stringify(user));
-    setShowRegister(false);
-  };
+  // Xử lý đăng nhập thành công
+  const handleLoginSuccess = (data) => {
+  const u = data.user; // ✅ lấy đúng cấp "user" từ response
+  setAuthUser(u);
+  localStorage.setItem("authUser", JSON.stringify(u));
+  setShowLogin(false);
+};
+
+const handleRegisterSuccess = (data) => {
+  const u = data.user; // ✅ tương tự cho đăng ký
+  setAuthUser(u);
+  localStorage.setItem("authUser", JSON.stringify(u));
+  setShowRegister(false);
+};
+
+  // Xử lý đăng xuất
   const handleLogout = () => {
     setAuthUser(null);
     localStorage.removeItem('authUser');
   };
 
-   return (
-     <div className="min-h-screen bg-white">
-       <NavBar
-         setCurrentPage={setCurrentPage}
-         setMobileMenuOpen={setMobileMenuOpen}
-         mobileMenuOpen={mobileMenuOpen}
-         setSelectedPlaceId={setSelectedPlaceId}
+  return (
+    <div className="min-h-screen bg-white">
+      <NavBar
+        setCurrentPage={setCurrentPage}
+        setMobileMenuOpen={setMobileMenuOpen}
+        mobileMenuOpen={mobileMenuOpen}
+        setSelectedPlaceId={setSelectedPlaceId}
         authUser={authUser}
         onOpenLogin={() => setShowLogin(true)}
         onOpenRegister={() => setShowRegister(true)}
         onLogout={handleLogout}
-       />
+      />
 
-       {/* routes */}
-       {currentPage === 'home' && (
-  <HomePage setCurrentPage={setCurrentPage} setSelectedPlaceId={setSelectedPlaceId} />
-)}
-        {currentPage === 'explore' && <ExplorePage />}
+      {/* Routes */}
+      {currentPage === 'home' && (
+        <HomePage setCurrentPage={setCurrentPage} setSelectedPlaceId={setSelectedPlaceId} />
+      )}
+      {currentPage === 'explore' && <ExplorePage />}
+      {currentPage === 'tools' && <ToolsMenu setCurrentPage={setCurrentPage} />}
+      {currentPage === 'currency' && <CurrencyPage setCurrentPage={setCurrentPage} />}
+      {currentPage === 'translate' && <TranslatePage setCurrentPage={setCurrentPage} />}
+      {currentPage === 'cost' && <CostPage setCurrentPage={setCurrentPage} />}
+      {currentPage === 'directions' && <DirectionsPage setCurrentPage={setCurrentPage} />}
+      {currentPage === 'map' && <MapPage />}
+      {currentPage === 'details' && (
+        <DestinationDetailPage placeId={selectedPlaceId} setCurrentPage={setCurrentPage} />
+      )}
+      {currentPage === 'admin' && <AdminLayout authUser={authUser} />}
+      <Footer setCurrentPage={setCurrentPage} />
 
-        {currentPage === 'tools' && <ToolsMenu setCurrentPage={setCurrentPage} />}
-        {currentPage === 'currency' && <CurrencyPage setCurrentPage={setCurrentPage} />}
-        {currentPage === 'translate' && <TranslatePage setCurrentPage={setCurrentPage} />}
-        {currentPage === 'cost' && <CostPage setCurrentPage={setCurrentPage} />}
-        {currentPage === 'directions' && <DirectionsPage setCurrentPage={setCurrentPage} />}
-
-        {currentPage === 'map' && <MapPage />}
-        {currentPage === 'details' && (
-          <DestinationDetailPage placeId={selectedPlaceId} setCurrentPage={setCurrentPage} />
-        )}
-
-       <Footer setCurrentPage={setCurrentPage} />
-
-       {/* Chat button */}
-       <button
-         onClick={() => setIsChatOpen(!isChatOpen)}
-         className="fixed bottom-6 right-6 bg-gradient-to-r from-cyan-500 to-blue-600 text-white w-16 h-16 rounded-full shadow-lg flex items-center justify-center z-50 hover:scale-110 transition-transform"
-       >
-         {isChatOpen ? <X className="w-8 h-8" /> : <MessageSquare className="w-8 h-8" />}
-       </button>
-       {isChatOpen && (
-         <div className="fixed bottom-24 right-6 z-40 shadow-2xl rounded-lg overflow-hidden">
-           <ChatBox />
-         </div>
-       )}
+      {/* Chat button */}
+      <button
+        onClick={() => setIsChatOpen(!isChatOpen)}
+        className="fixed bottom-6 right-6 bg-gradient-to-r from-cyan-500 to-blue-600 text-white w-16 h-16 rounded-full shadow-lg flex items-center justify-center z-50 hover:scale-110 transition-transform"
+      >
+        {isChatOpen ? <X className="w-8 h-8" /> : <MessageSquare className="w-8 h-8" />}
+      </button>
+      {isChatOpen && (
+        <div className="fixed bottom-24 right-6 z-40 shadow-2xl rounded-lg overflow-hidden">
+          <ChatBox />
+        </div>
+      )}
 
       {/* Auth Modals */}
-      {showLogin && <LoginModal onClose={() => setShowLogin(false)} onSuccess={handleLoginSuccess} />}
-      {showRegister && <RegisterModal onClose={() => setShowRegister(false)} onSuccess={handleRegisterSuccess} />}
-     </div>
-   );
- };
+      {showLogin && (
+        <LoginModal 
+          showLogin={showLogin}
+          onClose={() => setShowLogin(false)}      // 👈 thêm dòng này
+          showRegister={showRegister}
+          setShowLogin={setShowLogin}        // 👈 thêm dòng này
+          setShowRegister={setShowRegister}
+          setAuthUser={setAuthUser}          // 👈 thêm dòng này
+          onLoginSuccess={handleLoginSuccess}
+          onRegisterSuccess={handleRegisterSuccess} 
+        />
+      )}
+      {showRegister && (
+        <RegisterModal 
+          onClose={() => setShowRegister(false)} 
+          onSuccess={handleRegisterSuccess} 
+        />
+      )}
+      {showProfile && authUser && (
+  <ProfileModal
+    user={authUser}
+    onClose={() => setShowProfile(false)}
+    onSaved={(u) => { setAuthUser(u); localStorage.setItem('authUser', JSON.stringify(u)); }}
+  />
+)}
 
+{showChangePw && authUser && (
+  <ChangePasswordModal
+    user={authUser}
+    onClose={() => setShowChangePw(false)}
+  />
+)}
+    </div>
+  );
+};
 
 export default App;
