@@ -108,35 +108,88 @@ const HomePage = ({ setCurrentPage, setSearchQuery }) => {
   };
 
   // Tìm kiếm thông minh với AI
-  const handleSmartSearch = async () => {
-    if (!searchInput.trim()) return;
-    
-    setLoading(true);
-    try {
-      // Gọi AI API để phân tích và gợi ý
-      const aiResponse = await axios.post('http://127.0.0.1:5000/api/chat', 
-        new URLSearchParams({
-          message: `Tôi muốn tìm địa điểm du lịch: "${searchInput}". Thời tiết hiện tại: ${weather?.temp}°C, ${weather?.description}. Hãy gợi ý 3 điểm đến phù hợp ở Việt Nam dưới dạng JSON với format: [{"name": "tên", "description": "mô tả", "reason": "lý do phù hợp"}]`
-        })
-      );
-      
-      // Parse AI response
-      const aiText = aiResponse.data.reply;
-      try {
-        const jsonMatch = aiText.match(/\[[\s\S]*\]/);
-        if (jsonMatch) {
-          const suggestions = JSON.parse(jsonMatch[0]);
-          setRecommendations(suggestions);
-        }
-      } catch (e) {
-        console.error('Lỗi parse JSON:', e);
-      }
-    } catch (error) {
-      console.error('Lỗi tìm kiếm:', error);
-    } finally {
-      setLoading(false);
+ // Tìm kiếm thông minh với AI — CHO PHÉP 1 TỪ KHÓA
+const handleSmartSearch = async () => {
+  const raw = (searchInput || "").trim();
+  if (!raw) return;
+
+  // Cắt thành các từ khóa rời, vẫn hoạt động dù chỉ có 1 từ
+  const keywords = raw.toLowerCase().split(/\s+/).filter(Boolean);
+
+  setLoading(true);
+  try {
+    // Ghép thông tin thời tiết (nếu có)
+    const w = weather
+      ? `${weather.temp}°C, ${weather.description}, ${weather.city}`
+      : "không rõ";
+
+    // Prompt chỉ dựa vào TỪ KHÓA, không yêu cầu câu hoàn chỉnh
+    const prompt = `
+Người dùng muốn gợi ý điểm đến tại Việt Nam.
+TỪ KHÓA: ${keywords.join(", ")}.
+Thời tiết hiện tại: ${w}.
+Hãy suy luận ý định từ các từ khóa (vd: "biển", "leo núi", "lịch sử", "ẩm thực", "thư giãn"...)
+và gợi ý 3 điểm đến PHÙ HỢP. Trả về JSON dạng:
+[
+  {"name": "tên", "description": "mô tả ngắn", "reason": "lý do phù hợp"}
+]
+CHỈ TRẢ JSON, không giải thích thêm.
+`.trim();
+
+    const aiResponse = await axios.post(
+      'http://127.0.0.1:5000/api/chat',
+      new URLSearchParams({ message: prompt })
+    );
+
+    const aiText = aiResponse.data.reply || "";
+    const jsonMatch = aiText.match(/\[[\s\S]*\]/);
+    const normalizeRecs = (arr=[]) =>
+      arr.map(item => ({
+      ...item,
+      explore: item.explore && Array.isArray(item.explore) && item.explore.length
+      ? item.explore
+      : buildExploreLinks(item.name || ""),
+  }));
+    if (jsonMatch) {
+      const suggestions = JSON.parse(jsonMatch[0]);
+      setRecommendations(Array.isArray(suggestions) ? suggestions : []);
+    } else {
+      setRecommendations([]);
     }
-  };
+  } catch (error) {
+    console.error('Lỗi tìm kiếm:', error);
+    // Fallback siêu đơn giản theo một số từ khóa phổ biến
+    const k = keywords.join(" ");
+    const pick = (arr)=>arr.slice(0,3);
+    if (/biển|bien/.test(k)) {
+      setRecommendations(pick([
+        {name:"Nha Trang",description:"Biển xanh cát trắng, nhiều hoạt động nước",reason:"Hợp từ khóa 'biển'"},
+        {name:"Phú Quốc",description:"Đảo ngọc, lặn ngắm san hô",reason:"Khí hậu ấm, biển đẹp"},
+        {name:"Đà Nẵng - Mỹ Khê",description:"Một trong những bãi biển đẹp nhất",reason:"Tiện di chuyển & dịch vụ tốt"}
+      ]));
+    } else if (/núi|leo|trek/.test(k)) {
+      setRecommendations(pick([
+        {name:"Sa Pa",description:"Ruộng bậc thang, Fansipan",reason:"Khí hậu mát, phù hợp leo núi"},
+        {name:"Đà Lạt",description:"Đồi thông, trekking nhẹ",reason:"Không quá nắng nóng"},
+        {name:"Bạch Mã",description:"Vườn quốc gia, thác nước",reason:"Đi bộ đường dài"}
+      ]));
+    } else {
+      setRecommendations([]);
+    }
+  } finally {
+    setLoading(false);
+  }
+};
+
+const buildExploreLinks = (placeName) => {
+  const q = encodeURIComponent(placeName);
+  return [
+    { label: "Google Maps", href: `https://www.google.com/maps/search/${q}` },
+    { label: "Wikipedia",   href: `https://vi.wikipedia.org/wiki/Special:Search?search=${q}` },
+    { label: "YouTube Vlog",href: `https://www.youtube.com/results?search_query=${q}+du+lich` },
+    { label: "Lịch trình",  href: `https://www.google.com/search?q=lich+trinh+du+lich+${q}` },
+  ];
+};
 
   return (
     <div className="pt-16">
@@ -184,7 +237,7 @@ const HomePage = ({ setCurrentPage, setSearchQuery }) => {
                 className="flex-1 px-4 py-3 text-gray-800 outline-none"
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSmartSearch()}
+               onKeyDown={(e) => { if (e.key === 'Enter') handleSmartSearch(); }}
               />
               <button 
                 onClick={handleSmartSearch}
