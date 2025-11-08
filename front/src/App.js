@@ -1,25 +1,23 @@
 import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import { MapPin, Search, Globe, Camera, Star, Menu, X, Play, Navigation, MessageSquare, Paperclip, DollarSign, Cloud, Languages, Map, Compass, Sun, MapPinned } from 'lucide-react';
+import { MapPin, Search, Globe, Camera, Star, Menu, X, Play, Navigation, MessageSquare, Paperclip, DollarSign, Cloud, Languages, Map, Compass, Sun, MapPinned, Users, ChevronsLeft, Building, Utensils, Ticket } from 'lucide-react';
 import 'aframe';
 
-// *** THÊM MỚI: Import Leaflet và CSS ***
+// *** Import Leaflet và CSS ***
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 
-// *** THÊM MỚI: Sửa lỗi icon marker mặc định của Leaflet ***
-// React Leaflet thường gặp lỗi không hiển thị icon marker do vấn đề với bundler (như Webpack)
-// Đoạn code này import icon và gán lại thủ công
+// *** Sửa lỗi icon marker mặc định của Leaflet ***
 import iconUrl from 'leaflet/dist/images/marker-icon.png';
 import iconShadowUrl from 'leaflet/dist/images/marker-shadow.png';
 
 let DefaultIcon = L.icon({
     iconUrl: iconUrl,
     shadowUrl: iconShadowUrl,
-    iconAnchor: [12, 41], // Vị trí neo của icon
-    popupAnchor: [1, -34], // Vị trí của popup so với icon
-    shadowSize: [41, 41]  // Kích thước của bóng
+    iconAnchor: [12, 41], 
+    popupAnchor: [1, -34], 
+    shadowSize: [41, 41] 
 });
 
 L.Marker.prototype.options.icon = DefaultIcon;
@@ -27,173 +25,131 @@ L.Marker.prototype.options.icon = DefaultIcon;
 
 
 // Navigation
-const NavBar = ({ setCurrentPage, setMobileMenuOpen, mobileMenuOpen }) => (
-  <nav className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-lg fixed w-full top-0 z-50">
-    <div className="container mx-auto px-4 py-4">
-      <div className="flex justify-between items-center">
-        <div className="flex items-center gap-2 cursor-pointer" onClick={() => setCurrentPage('home')}>
-          <Globe className="w-8 h-8" />
-          <span className="text-xl font-bold hidden sm:inline">Smart Travel Hub</span>
-        </div>
-        
-        <div className="hidden md:flex gap-6">
-          <button onClick={() => setCurrentPage('home')} className="hover:text-yellow-200 transition">Trang chủ</button>
-          <button onClick={() => setCurrentPage('explore')} className="hover:text-yellow-200 transition">Khám phá</button>
-          <button onClick={() => setCurrentPage('tools')} className="hover:text-yellow-200 transition">Công cụ</button>
-          <button onClick={() => setCurrentPage('map')} className="hover:text-yellow-200 transition">Bản đồ</button>
+// *** CẬP NHẬT: Thêm 'setSelectedPlaceId' để reset khi về home ***
+const NavBar = ({ setCurrentPage, setMobileMenuOpen, mobileMenuOpen, setSelectedPlaceId }) => {
+  
+  const goHome = () => {
+    setCurrentPage('home');
+    setSelectedPlaceId(null);
+  };
+  
+  const navigate = (page) => {
+    setCurrentPage(page);
+    setSelectedPlaceId(null); // Reset ID khi chuyển trang
+    setMobileMenuOpen(false);
+  };
+
+  return (
+    <nav className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-lg fixed w-full top-0 z-50">
+      <div className="container mx-auto px-4 py-4">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-2 cursor-pointer" onClick={goHome}>
+            <Globe className="w-8 h-8" />
+            <span className="text-xl font-bold hidden sm:inline">Smart Travel Hub</span>
+          </div>
+          
+          <div className="hidden md:flex gap-6">
+            <button onClick={goHome} className="hover:text-yellow-200 transition">Trang chủ</button>
+            <button onClick={() => navigate('explore')} className="hover:text-yellow-200 transition">Khám phá</button>
+            <button onClick={() => navigate('tools')} className="hover:text-yellow-200 transition">Công cụ</button>
+            <button onClick={() => navigate('map')} className="hover:text-yellow-200 transition">Bản đồ</button>
+          </div>
+
+          <button className="md:hidden" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+            {mobileMenuOpen ? <X /> : <Menu />}
+          </button>
         </div>
 
-        <button className="md:hidden" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
-          {mobileMenuOpen ? <X /> : <Menu />}
-        </button>
+        {mobileMenuOpen && (
+          <div className="md:hidden mt-4 space-y-2 pb-4">
+            <button onClick={() => { setCurrentPage('home'); setSelectedPlaceId(null); setMobileMenuOpen(false); }} className="block w-full text-left py-2 hover:bg-cyan-600 px-2 rounded">Trang chủ</button>
+            <button onClick={() => navigate('explore')} className="block w-full text-left py-2 hover:bg-cyan-600 px-2 rounded">Khám phá</button>
+            <button onClick={() => navigate('tools')} className="block w-full text-left py-2 hover:bg-cyan-600 px-2 rounded">Công cụ</button>
+            <button onClick={() => navigate('map')} className="block w-full text-left py-2 hover:bg-cyan-600 px-2 rounded">Bản đồ</button>
+          </div>
+        )}
       </div>
+    </nav>
+  );
+};
 
-      {mobileMenuOpen && (
-        <div className="md:hidden mt-4 space-y-2 pb-4">
-          <button onClick={() => { setCurrentPage('home'); setMobileMenuOpen(false); }} className="block w-full text-left py-2 hover:bg-cyan-600 px-2 rounded">Trang chủ</button>
-          <button onClick={() => { setCurrentPage('explore'); setMobileMenuOpen(false); }} className="block w-full text-left py-2 hover:bg-cyan-600 px-2 rounded">Khám phá</button>
-          <button onClick={() => { setCurrentPage('tools'); setMobileMenuOpen(false); }} className="block w-full text-left py-2 hover:bg-cyan-600 px-2 rounded">Công cụ</button>
-          <button onClick={() => { setCurrentPage('map'); setMobileMenuOpen(false); }} className="block w-full text-left py-2 hover:bg-cyan-600 px-2 rounded">Bản đồ</button>
-        </div>
-      )}
-    </div>
-  </nav>
-);
-
-// Home Page với AI Search & Weather
-const HomePage = ({ setCurrentPage, setSearchQuery }) => {
+// Home Page
+// *** CẬP NHẬT: Thêm 'setSelectedPlaceId' và sửa 'handleSmartSearch' để gọi API DB ***
+const HomePage = ({ setCurrentPage, setSelectedPlaceId }) => {
   const [searchInput, setSearchInput] = useState('');
   const [weather, setWeather] = useState(null);
-  const [recommendations, setRecommendations] = useState([]);
+  const [recommendations, setRecommendations] = useState([]); // Sẽ chứa kết quả từ DB
   const [loading, setLoading] = useState(false);
   
-  // (Giả sử bạn đã định nghĩa WEATHER_API_KEY ở đâu đó, 
-  //  vì nó được dùng ở đây nhưng khai báo trong file .env)
-  //  Trong React, bạn cần truy cập qua process.env.REACT_APP_WEATHER_API_KEY
-  const WEATHER_API_KEY = 'bdb6cd644053354271d07e32ba89b83'; // Lấy từ file .env của bạn
+  const WEATHER_API_KEY = 'bdb6cd644053354271d07e32ba89b83'; 
 
-  // Lấy vị trí và thời tiết hiện tại
+  // Lấy vị trí và thời tiết hiện tại (Giữ nguyên)
   useEffect(() => {
     getCurrentLocationWeather();
   }, []);
 
   const getCurrentLocationWeather = async () => {
     try {
-      // Lấy vị trí hiện tại
       navigator.geolocation.getCurrentPosition(async (position) => {
         const { latitude, longitude } = position.coords;
-        
-        // Gọi Weather API
         const weatherResponse = await axios.get(
           `https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&appid=${WEATHER_API_KEY}&units=metric&lang=vi`
         );
-        
         setWeather({
           temp: Math.round(weatherResponse.data.main.temp),
           description: weatherResponse.data.weather[0].description,
           icon: weatherResponse.data.weather[0].icon,
           city: weatherResponse.data.name
         });
+      }, (error) => {
+         console.error('Lỗi lấy vị trí:', error);
+         // Fallback data
+         setWeather({ temp: 28, description: 'nắng đẹp', icon: '01d', city: 'Hồ Chí Minh' });
       });
     } catch (error) {
       console.error('Lỗi lấy thời tiết:', error);
-      // Fallback data
-      setWeather({
-        temp: 28,
-        description: 'nắng đẹp',
-        icon: '01d',
-        city: 'Hồ Chí Minh'
-      });
+      setWeather({ temp: 28, description: 'nắng đẹp', icon: '01d', city: 'Hồ Chí Minh' });
     }
   };
 
-  // Tìm kiếm thông minh với AI
- // Tìm kiếm thông minh với AI — CHO PHÉP 1 TỪ KHÓA
-const handleSmartSearch = async () => {
-  const raw = (searchInput || "").trim();
-  if (!raw) return;
-
-  // Cắt thành các từ khóa rời, vẫn hoạt động dù chỉ có 1 từ
-  const keywords = raw.toLowerCase().split(/\s+/).filter(Boolean);
-
-  setLoading(true);
-  try {
-    // Ghép thông tin thời tiết (nếu có)
-    const w = weather
-      ? `${weather.temp}°C, ${weather.description}, ${weather.city}`
-      : "không rõ";
-
-    // Prompt chỉ dựa vào TỪ KHÓA, không yêu cầu câu hoàn chỉnh
-    const prompt = `
-Người dùng muốn gợi ý điểm đến tại Việt Nam.
-TỪ KHÓA: ${keywords.join(", ")}.
-Thời tiết hiện tại: ${w}.
-Hãy suy luận ý định từ các từ khóa (vd: "biển", "leo núi", "lịch sử", "ẩm thực", "thư giãn"...)
-và gợi ý 3 điểm đến PHÙ HỢP. Trả về JSON dạng:
-[
-  {"name": "tên", "description": "mô tả ngắn", "reason": "lý do phù hợp"}
-]
-CHỈ TRẢ JSON, không giải thích thêm.
-`.trim();
-
-    const aiResponse = await axios.post(
-      'http://127.0.0.1:5000/api/chat',
-      new URLSearchParams({ message: prompt })
-    );
-
-    const aiText = aiResponse.data.reply || "";
-    const jsonMatch = aiText.match(/\[[\s\S]*\]/);
-    const normalizeRecs = (arr=[]) =>
-      arr.map(item => ({
-      ...item,
-      explore: item.explore && Array.isArray(item.explore) && item.explore.length
-      ? item.explore
-      : buildExploreLinks(item.name || ""),
-  }));
-    if (jsonMatch) {
-      const suggestions = JSON.parse(jsonMatch[0]);
-      setRecommendations(Array.isArray(suggestions) ? suggestions : []);
-    } else {
+  // *** THAY ĐỔI: Tìm kiếm địa điểm từ Database (Backend Flask) ***
+  const handleSmartSearch = async () => {
+    const query = searchInput.trim();
+    if (!query) {
       setRecommendations([]);
+      return;
     }
-  } catch (error) {
-    console.error('Lỗi tìm kiếm:', error);
-    // Fallback siêu đơn giản theo một số từ khóa phổ biến
-    const k = keywords.join(" ");
-    const pick = (arr)=>arr.slice(0,3);
-    if (/biển|bien/.test(k)) {
-      setRecommendations(pick([
-        {name:"Nha Trang",description:"Biển xanh cát trắng, nhiều hoạt động nước",reason:"Hợp từ khóa 'biển'"},
-        {name:"Phú Quốc",description:"Đảo ngọc, lặn ngắm san hô",reason:"Khí hậu ấm, biển đẹp"},
-        {name:"Đà Nẵng - Mỹ Khê",description:"Một trong những bãi biển đẹp nhất",reason:"Tiện di chuyển & dịch vụ tốt"}
-      ]));
-    } else if (/núi|leo|trek/.test(k)) {
-      setRecommendations(pick([
-        {name:"Sa Pa",description:"Ruộng bậc thang, Fansipan",reason:"Khí hậu mát, phù hợp leo núi"},
-        {name:"Đà Lạt",description:"Đồi thông, trekking nhẹ",reason:"Không quá nắng nóng"},
-        {name:"Bạch Mã",description:"Vườn quốc gia, thác nước",reason:"Đi bộ đường dài"}
-      ]));
-    } else {
-      setRecommendations([]);
-    }
-  } finally {
-    setLoading(false);
-  }
-};
 
-const buildExploreLinks = (placeName) => {
-  const q = encodeURIComponent(placeName);
-  return [
-    { label: "Google Maps", href: `https://www.google.com/maps/search/${q}` },
-    { label: "Wikipedia",   href: `https://vi.wikipedia.org/wiki/Special:Search?search=${q}` },
-    { label: "YouTube Vlog",href: `https://www.youtube.com/results?search_query=${q}+du+lich` },
-    { label: "Lịch trình",  href: `https://www.google.com/search?q=lich+trinh+du+lich+${q}` },
-  ];
-};
+    setLoading(true);
+    setRecommendations([]); // Xóa kết quả cũ
+
+    try {
+      // Gọi API /api/search-places
+      const response = await axios.get('http://127.0.0.1:5000/api/search-places', {
+        params: { q: query }
+      });
+      
+      // Lưu kết quả (đã có id, name, description, thumbnail)
+      setRecommendations(response.data || []);
+
+    } catch (error) {
+      console.error('Lỗi tìm kiếm địa điểm:', error);
+      // Bạn có thể đặt fallback data ở đây nếu muốn
+      setRecommendations([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // *** THÊM MỚI: Hàm xử lý khi click vào thẻ kết quả ***
+  const handleRecommendationClick = (placeId) => {
+    setSelectedPlaceId(placeId);
+    setCurrentPage('details'); // Chuyển sang trang chi tiết
+  };
 
   return (
     <div className="pt-16">
-      {/* Hero Section */}
+      {/* Hero Section (Giữ nguyên) */}
       <div className="relative h-screen">
         <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/90 to-blue-600/90 z-10"></div>
         <img 
@@ -206,10 +162,10 @@ const buildExploreLinks = (placeName) => {
             🌍 Smart Travel Hub
           </h1>
           <p className="text-xl md:text-2xl mb-8 text-center max-w-3xl">
-            Nền tảng du lịch thông minh với AI - Dự báo thời tiết & Gợi ý điểm đến
+            Tìm kiếm địa điểm du lịch tại Việt Nam
           </p>
           
-          {/* Weather Display */}
+          {/* Weather Display (Giữ nguyên) */}
           {weather && (
             <div className="bg-white/20 backdrop-blur-lg rounded-2xl p-6 mb-8 text-center">
               <div className="flex items-center justify-center gap-4">
@@ -227,13 +183,13 @@ const buildExploreLinks = (placeName) => {
             </div>
           )}
 
-          {/* Smart Search */}
+          {/* Smart Search - Đã cập nhật */}
           <div className="w-full max-w-3xl">
             <div className="bg-white rounded-full shadow-2xl p-2 flex items-center mb-4">
               <Search className="w-6 h-6 text-gray-400 ml-4" />
               <input
                 type="text"
-                placeholder="VD: Tôi muốn đi biển, thư giãn..."
+                placeholder="Tìm tên địa điểm (VD: Ba Na Hills, Hội An...)"
                 className="flex-1 px-4 py-3 text-gray-800 outline-none"
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
@@ -244,22 +200,26 @@ const buildExploreLinks = (placeName) => {
                 disabled={loading}
                 className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white px-8 py-3 rounded-full hover:shadow-lg transition disabled:opacity-50"
               >
-                {loading ? '🔍 Đang tìm...' : 'Tìm kiếm AI'}
+                {loading ? '🔍 Đang tìm...' : 'Tìm kiếm'}
               </button>
             </div>
             <p className="text-sm text-center text-white/80">
-              💡 AI sẽ gợi ý điểm đến phù hợp với thời tiết và mong muốn của bạn
+              💡 Tìm kiếm địa điểm trực tiếp từ cơ sở dữ liệu
             </p>
           </div>
 
-          {/* AI Recommendations */}
+          {/* *** CẬP NHẬT: Hiển thị kết quả tìm kiếm từ DB *** */}
           {recommendations.length > 0 && (
             <div className="w-full max-w-4xl mt-8 grid md:grid-cols-3 gap-4">
-              {recommendations.map((rec, idx) => (
-                <div key={idx} className="bg-white rounded-xl p-4 text-gray-800 shadow-lg">
-                  <h3 className="font-bold text-lg mb-2">✨ {rec.name}</h3>
-                  <p className="text-sm text-gray-600 mb-2">{rec.description}</p>
-                  <p className="text-xs text-cyan-600">💡 {rec.reason}</p>
+              {recommendations.map((rec) => (
+                <div 
+                  key={rec.id} 
+                  className="bg-white rounded-xl p-4 text-gray-800 shadow-lg cursor-pointer hover:shadow-2xl hover:scale-105 transition"
+                  onClick={() => handleRecommendationClick(rec.id)}
+                >
+                  <img src={rec.thumbnail || 'https://via.placeholder.com/300x200'} alt={rec.name} className="w-full h-32 object-cover rounded-lg mb-3" />
+                  <h3 className="font-bold text-lg mb-2">📍 {rec.name}</h3>
+                  <p className="text-sm text-gray-600 mb-2 line-clamp-2">{rec.description}</p>
                 </div>
               ))}
             </div>
@@ -267,7 +227,7 @@ const buildExploreLinks = (placeName) => {
         </div>
       </div>
 
-      {/* Features */}
+      {/* Features (Giữ nguyên) */}
       <div className="py-20 bg-gray-50">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 text-gray-800">
@@ -277,7 +237,7 @@ const buildExploreLinks = (placeName) => {
             {[
               { icon: Sun, title: 'Dự báo thời tiết', desc: 'API OpenWeatherMap', color: 'orange' },
               { icon: Compass, title: 'Gợi ý AI', desc: 'Gemini AI tư vấn điểm đến', color: 'purple' },
-              { icon: Map, title: 'Bản đồ Leaflet', desc: 'React Leaflet', color: 'blue' }, // Cập nhật
+              { icon: Map, title: 'Bản đồ Leaflet', desc: 'React Leaflet', color: 'blue' }, 
               { icon: Languages, title: 'Phiên dịch AI', desc: 'Dịch & Lồng tiếng', color: 'green' }
             ].map((feature, idx) => (
               <div key={idx} className="bg-white p-6 rounded-xl shadow-lg hover:shadow-2xl transition text-center">
@@ -293,8 +253,9 @@ const buildExploreLinks = (placeName) => {
   );
 };
 
-// Tools Page - Tích hợp API thực
+// Tools Page (Giữ nguyên)
 const ToolsPage = () => {
+  // ... (Toàn bộ code của ToolsPage giữ nguyên như file gốc) ...
   // Currency Converter
   const [amount, setAmount] = useState(100);
   const [fromCurrency, setFromCurrency] = useState('USD');
@@ -600,12 +561,8 @@ const ToolsPage = () => {
               </div>
             )}
           </div>
-
+          
           {/* Google Maps Direction (GIỮ NGUYÊN) */}
-          {/* Lưu ý: Leaflet không có tính năng chỉ đường (directions) mạnh như Google Maps.
-              Để làm điều này với Leaflet, bạn cần một dịch vụ routing (như OSRM, Mapbox, hoặc 
-              vẫn dùng Google Directions API) và một plugin như leaflet-routing-machine.
-              Vì vậy, tôi giữ nguyên phần này làm placeholder như cũ. */}
           <div className="bg-white rounded-xl shadow-lg p-6 lg:col-span-2">
             <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
               <Map className="w-6 h-6 text-red-500" />
@@ -627,14 +584,13 @@ const ToolsPage = () => {
               </div>
             </div>
           </div>
-
         </div>
       </div>
     </div>
   );
 };
 
-// Explore Page - Fetch từ AI
+// Explore Page (Giữ nguyên)
 const ExplorePage = () => {
   const [destinations, setDestinations] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -647,27 +603,22 @@ const ExplorePage = () => {
   const loadDestinations = async () => {
     setLoading(true);
     try {
-      const response = await axios.post('http://127.0.0.1:5000/api/chat',
-        new URLSearchParams({
-          message: `Liệt kê 6 điểm đến du lịch nổi tiếng ở Việt Nam. Trả về JSON array: [{"name": "tên", "description": "mô tả ngắn", "image": "URL ảnh unsplash", "rating": 4.5-5.0, "category": "thiên nhiên/văn hóa/nghỉ dưỡng", "vr360": "URL ảnh 360 từ wikimedia commons"}]. Chỉ trả JSON, không giải thích.`
-        })
-      );
+      // *** THAY ĐỔI LỚN: Gọi API mới từ Database (top-rated-places) ***
+      const response = await axios.get('http://127.0.0.1:5000/api/top-rated-places');
       
-      const jsonMatch = response.data.reply.match(/\[[\s\S]*\]/);
-      if (jsonMatch) {
-        const dests = JSON.parse(jsonMatch[0]);
-        setDestinations(dests);
-      }
+      // Response.data đã được format sẵn trong app.py
+      setDestinations(response.data || []);
+
     } catch (error) {
-      console.error('Lỗi load điểm đến:', error);
+      console.error('Lỗi load điểm đến từ DB:', error);
       // Fallback data
       setDestinations([
         {
-          name: 'Vịnh Hạ Long',
-          description: 'Di sản thiên nhiên thế giới với hàng nghìn đảo đá vôi',
-          image: 'https://images.unsplash.com/photo-1528127269322-539801943592?w=800',
-          rating: 4.9,
-          category: 'thiên nhiên',
+          name: 'Lỗi Kết Nối DB',
+          description: 'Không thể tải dữ liệu. Vui lòng kiểm tra Flask Server và kết nối DB.',
+          image: 'https://via.placeholder.com/800x400?text=Database+Error',
+          rating: 0.0,
+          category: 'lỗi',
           vr360: 'https://upload.wikimedia.org/wikipedia/commons/f/f0/Halong_Bay_Vietnam_360_main_cav.jpg'
         }
       ]);
@@ -683,8 +634,8 @@ const ExplorePage = () => {
   return (
     <div className="pt-24 pb-12 min-h-screen bg-gray-50">
       <div className="container mx-auto px-4">
-        <h1 className="text-4xl font-bold mb-4 text-gray-800">🗺️ Khám phá điểm đến</h1>
-        <p className="text-gray-600 mb-8">Danh sách được AI gợi ý dựa trên độ phổ biến</p>
+        <h1 className="text-4xl font-bold mb-4 text-gray-800">🗺️ Khám phá điểm đến (Top Rate)</h1>
+        <p className="text-gray-600 mb-8">Danh sách 6 điểm đến được đánh giá cao nhất từ cơ sở dữ liệu</p>
 
         {/* Search */}
         <div className="bg-white rounded-xl shadow-lg p-4 mb-8">
@@ -703,11 +654,12 @@ const ExplorePage = () => {
         {loading ? (
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-500 mx-auto"></div>
-            <p className="text-gray-600 mt-4">🤖 AI đang tải dữ liệu...</p>
+            <p className="text-gray-600 mt-4">💾 Đang tải dữ liệu từ Database...</p>
           </div>
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredDests.map((dest, idx) => (
+              // Lưu ý: dest.rating giờ là rating trung bình từ DB
               <DestinationCard key={idx} destination={dest} />
             ))}
           </div>
@@ -717,8 +669,9 @@ const ExplorePage = () => {
   );
 };
 
-// Destination Card Component
+// Destination Card Component (Giữ nguyên)
 const DestinationCard = ({ destination }) => {
+  // ... (Toàn bộ code của DestinationCard giữ nguyên như file gốc) ...
   const [showVR, setShowVR] = useState(false);
   const [aiDescription, setAiDescription] = useState('');
   const [loadingDesc, setLoadingDesc] = useState(false);
@@ -837,13 +790,12 @@ const DestinationCard = ({ destination }) => {
   );
 };
 
-// Map Page với Weather API - *** ĐÃ CẬP NHẬT ***
+// Map Page (Giữ nguyên)
 const MapPage = () => {
+  // ... (Toàn bộ code của MapPage giữ nguyên như file gốc) ...
   const [currentWeather, setCurrentWeather] = useState(null);
   const [userLocation, setUserLocation] = useState(null); // { lat: number, lng: number }
-  
-  // (Giả sử bạn đã định nghĩa WEATHER_API_KEY ở đâu đó)
-  const WEATHER_API_KEY = 'bdb6cd644053354271d07e32ba89b83'; // Lấy từ file .env của bạn
+  const WEATHER_API_KEY = 'bdb6cd644053354271d07e32ba89b83'; 
 
 
   useEffect(() => {
@@ -875,7 +827,6 @@ const MapPage = () => {
         const fallbackLocation = { lat: 10.8231, lng: 106.6297 };
         setUserLocation(fallbackLocation);
         
-        // (Tạm thời fetch thời tiết cho HCM, hoặc bạn có thể set cứng)
         setCurrentWeather({
           temp: 32,
           description: 'nắng đẹp',
@@ -929,22 +880,21 @@ const MapPage = () => {
           </div>
         )}
 
-        {/* *** THAY THẾ Google Map BẰNG Leaflet Map *** */}
+        {/* Leaflet Map */}
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
           <div className="p-4 border-b">
             <h3 className="font-bold text-lg">Bản đồ vị trí (React Leaflet)</h3>
           </div>
           
-          {/* Kiểm tra nếu userLocation đã có dữ liệu thì mới render bản đồ */}
           {userLocation ? (
             <MapContainer 
               center={[userLocation.lat, userLocation.lng]} 
               zoom={13} 
               scrollWheelZoom={true} 
-              style={{ height: '500px', width: '100%' }} // Đảm bảo set chiều cao
+              style={{ height: '500px', width: '100%' }} 
             >
               <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                attribution='© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
               <Marker position={[userLocation.lat, userLocation.lng]}>
@@ -959,7 +909,6 @@ const MapPage = () => {
               </Marker>
             </MapContainer>
           ) : (
-            // Hiển thị loading trong khi chờ lấy vị trí
             <div className="h-96 bg-gray-200 flex items-center justify-center">
               <div className="text-center">
                 <MapPinned className="w-16 h-16 mx-auto mb-4 text-gray-400 animate-pulse" />
@@ -968,9 +917,7 @@ const MapPage = () => {
             </div>
           )}
         </div>
-        {/* *************************************** */}
-
-
+       
         {/* Weather Suggestions */}
         <div className="mt-8 bg-white rounded-xl shadow-lg p-6">
           <h3 className="text-xl font-bold mb-4">🌤️ Gợi ý dựa trên thời tiết</h3>
@@ -998,8 +945,359 @@ const MapPage = () => {
   );
 };
 
-// AI ChatBox
+
+// *** THÊM MỚI: Trang chi tiết địa điểm (Destination Detail Page) ***
+const DestinationDetailPage = ({ placeId, setCurrentPage }) => {
+  const [placeData, setPlaceData] = useState(null);
+  const [relatedPlaces, setRelatedPlaces] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [showVR, setShowVR] = useState(false);
+
+  // State cho dự đoán chi phí
+  const [days, setDays] = useState(3);
+  const [people, setPeople] = useState(2); // Thêm state số người
+  const [costPrediction, setCostPrediction] = useState(null);
+  const [loadingCost, setLoadingCost] = useState(false);
+
+  // Fetch data chi tiết
+  useEffect(() => {
+    const fetchDetails = async () => {
+      if (!placeId) return;
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await axios.get(`http://127.0.0.1:5000/api/place/${placeId}`);
+        setPlaceData(response.data);
+      } catch (err) {
+        setError('Không thể tải dữ liệu địa điểm.');
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const fetchRelated = async () => {
+       try {
+        const response = await axios.get(`http://127.0.0.1:5000/api/related-places`);
+        setRelatedPlaces(response.data);
+      } catch (err) {
+        console.error('Lỗi tải địa điểm liên quan:', err);
+      }
+    }
+
+    fetchDetails();
+    fetchRelated();
+  }, [placeId]);
+
+  // Hàm dự đoán chi phí (Copy từ ToolsPage và chỉnh sửa)
+  const handleCostPrediction = async () => {
+    if (!placeData?.details?.name) return;
+    
+    setLoadingCost(true);
+    try {
+      const response = await axios.post('http://127.0.0.1:5000/api/chat',
+        new URLSearchParams({
+          message: `Ước tính chi phí du lịch ${placeData.details.name} cho ${people} người trong ${days} ngày. Bao gồm: vé máy bay/di chuyển, khách sạn, ăn uống, vé tham quan. Trả về JSON: {"transport": số, "hotel": số, "food": số, "tickets": số, "total": số}. Chỉ trả JSON, không giải thích.`
+        })
+      );
+      
+      const jsonMatch = response.data.reply.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const costs = JSON.parse(jsonMatch[0]);
+        setCostPrediction(costs);
+      }
+    } catch (error) {
+      console.error('Lỗi dự đoán:', error);
+      setCostPrediction(null);
+    } finally {
+      setLoadingCost(false);
+    }
+  };
+
+  // Helper render sao
+  const renderStars = (rating) => {
+    let stars = [];
+    for(let i = 1; i <= 5; i++) {
+      stars.push(
+        <Star 
+          key={i} 
+          className={`w-5 h-5 ${i <= rating ? 'text-yellow-500 fill-current' : 'text-gray-300'}`} 
+        />
+      );
+    }
+    return <div className="flex">{stars}</div>;
+  };
+
+  // Lấy ảnh 360 (Giả sử ảnh đầu tiên là 360, hoặc bạn có thể thêm 1 trường
+  // 'is_360' vào bảng Images trong DB)
+  // Tạm thời, chúng ta sẽ dùng ảnh từ DB (nếu có) hoặc 1 ảnh mẫu
+  const vrImageUrl = placeData?.images?.[0]?.image_url || 'https://upload.wikimedia.org/wikipedia/commons/f/f0/Halong_Bay_Vietnam_360_main_cav.jpg';
+
+  if (loading) {
+    return (
+      <div className="pt-24 pb-12 min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-cyan-500"></div>
+      </div>
+    );
+  }
+
+  if (error || !placeData) {
+    return (
+       <div className="pt-24 pb-12 min-h-screen bg-gray-50 text-center">
+        <h1 className="text-3xl font-bold text-red-500 mb-4">Đã xảy ra lỗi</h1>
+        <p className="text-gray-600 mb-8">{error}</p>
+        <button
+          onClick={() => setCurrentPage('home')}
+          className="bg-cyan-500 text-white px-6 py-2 rounded-lg hover:bg-cyan-600 transition"
+        >
+          Về trang chủ
+        </button>
+      </div>
+    );
+  }
+
+  const { details, images, reviews } = placeData;
+
+  return (
+    <div className="pt-20 pb-12 bg-gray-50">
+      <div className="container mx-auto px-4">
+        
+        {/* Nút Back */}
+        <button 
+          onClick={() => setCurrentPage('home')}
+          className="flex items-center gap-1 text-cyan-600 hover:text-cyan-800 mb-4 transition"
+        >
+          <ChevronsLeft className="w-5 h-5" />
+          Quay lại tìm kiếm
+        </button>
+
+        {/* Header (Ảnh bìa và tên) */}
+        <div className="relative rounded-xl shadow-lg overflow-hidden h-96 mb-8">
+          <img 
+            src={images[0]?.image_url || 'https://via.placeholder.com/1200x400'} 
+            alt={details.name}
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
+          <div className="absolute bottom-0 left-0 p-8 text-white">
+            <h1 className="text-5xl font-bold mb-2">{details.name}</h1>
+            <p className="text-xl opacity-90">{details.address}</p>
+          </div>
+          <button
+            onClick={() => setShowVR(true)}
+            className="absolute top-6 right-6 bg-white/20 backdrop-blur-md text-white px-4 py-2 rounded-full flex items-center gap-2 hover:bg-white/30 transition"
+          >
+            <Camera className="w-5 h-5" />
+            Xem 360°
+          </button>
+        </div>
+
+        {/* Nội dung chính: Grid 2 cột */}
+        <div className="grid lg:grid-cols-3 gap-8">
+          
+          {/* Cột trái: Giới thiệu, Chi phí, Đánh giá */}
+          <div className="lg:col-span-2 space-y-8">
+
+            {/* Giới thiệu */}
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <h2 className="text-3xl font-bold mb-4">Giới thiệu</h2>
+              <p className="text-gray-700 leading-relaxed whitespace-pre-line">
+                {details.description || "Chưa có mô tả cho địa điểm này."}
+              </p>
+            </div>
+
+            {/* Dự đoán chi phí (Theo yêu cầu) */}
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <h2 className="text-3xl font-bold mb-6 flex items-center gap-2">
+                <DollarSign className="w-8 h-8 text-blue-500" />
+                Dự đoán chi phí (AI)
+              </h2>
+              
+              <div className="grid md:grid-cols-2 gap-4 mb-6">
+                <div>
+                  <label className="block text-sm font-semibold mb-2">Số ngày: {days}</label>
+                  <input
+                    type="range"
+                    min="1"
+                    max="14"
+                    value={days}
+                    onChange={(e) => setDays(parseInt(e.target.value))}
+                    className="w-full"
+                  />
+                </div>
+                <div>
+                  {/* *** THÊM MỚI: Input số người *** */}
+                  <label className="block text-sm font-semibold mb-2">Số người: {people}</label>
+                  <input
+                    type="range"
+                    min="1"
+                    max="10"
+                    value={people}
+                    onChange={(e) => setPeople(parseInt(e.target.value))}
+                    className="w-full"
+                  />
+                </div>
+              </div>
+
+              <button
+                onClick={handleCostPrediction}
+                disabled={loadingCost}
+                className="w-full bg-blue-500 text-white py-3 rounded-lg font-semibold hover:bg-blue-600 transition disabled:opacity-50"
+              >
+                {loadingCost ? '🤖 AI đang tính...' : `🤖 Ước tính cho ${people} người, ${days} ngày`}
+              </button>
+
+              {costPrediction && (
+                <div className="mt-6 grid md:grid-cols-2 gap-4">
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
+                      <span className="flex items-center gap-2 text-blue-700"><Navigation className="w-4 h-4" /> Di chuyển</span>
+                      <span className="font-bold">{costPrediction.transport?.toLocaleString()}đ</span>
+                    </div>
+                    <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+                      <span className="flex items-center gap-2 text-green-700"><Building className="w-4 h-4" /> Khách sạn</span>
+                      <span className="font-bold">{costPrediction.hotel?.toLocaleString()}đ</span>
+                    </div>
+                    <div className="flex justify-between items-center p-3 bg-yellow-50 rounded-lg">
+                      <span className="flex items-center gap-2 text-yellow-700"><Utensils className="w-4 h-4" /> Ăn uống</span>
+                      <span className="font-bold">{costPrediction.food?.toLocaleString()}đ</span>
+                    </div>
+                    <div className="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
+                      <span className="flex items-center gap-2 text-purple-700"><Ticket className="w-4 h-4" /> Vé tham quan</span>
+                      <span className="font-bold">{costPrediction.tickets?.toLocaleString()}đ</span>
+                    </div>
+                  </div>
+                  <div className="bg-gradient-to-br from-cyan-500 to-blue-600 text-white rounded-xl p-6 flex flex-col justify-center text-center">
+                    <p className="text-sm mb-2">Tổng chi phí dự kiến</p>
+                    <p className="text-4xl font-bold mb-4">{costPrediction.total?.toLocaleString()}đ</p>
+                    <p className="text-xs opacity-80">(Cho {people} người / {days} ngày)</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Đánh giá (Reviews) */}
+            <div className="bg-white rounded-xl shadow-lg p-6">
+              <h2 className="text-3xl font-bold mb-6">Đánh giá từ du khách</h2>
+              {reviews.length > 0 ? (
+                <div className="space-y-6">
+                  {reviews.map((review) => (
+                    <div key={review.id} className="border-b pb-6 last:border-b-0">
+                      <div className="flex justify-between items-center mb-2">
+                        <h3 className="font-bold text-lg text-gray-800">{review.user_name}</h3>
+                        <span className="text-xs text-gray-500">
+                          {new Date(review.created_at).toLocaleDateString('vi-VN')}
+                        </span>
+                      </div>
+                      {renderStars(review.rating)}
+                      <p className="text-gray-700 mt-3">{review.comment}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-gray-600">Chưa có đánh giá nào cho địa điểm này.</p>
+              )}
+            </div>
+
+          </div>
+
+          {/* Cột phải: Bản đồ, Ảnh, Liên quan */}
+          <div className="lg:col-span-1 space-y-8">
+            
+            {/* Bản đồ Mini (Leaflet) */}
+            <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+              <div className="p-4 border-b">
+                <h3 className="font-bold text-lg">Vị trí trên bản đồ</h3>
+              </div>
+              <MapContainer
+                center={[details.lat, details.lng]}
+                zoom={14}
+                style={{ height: '300px', width: '100%' }}
+                scrollWheelZoom={false} // Tắt zoom cuộn chuột
+              >
+                <TileLayer
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+                <Marker position={[details.lat, details.lng]}>
+                  <Popup>{details.name}</Popup>
+                </Marker>
+              </MapContainer>
+            </div>
+
+            {/* Album ảnh */}
+            <div className="bg-white rounded-xl shadow-lg p-6">
+               <h3 className="font-bold text-lg mb-4">Album ảnh</h3>
+               <div className="grid grid-cols-2 gap-4">
+                {images.map((img) => (
+                  <img 
+                    key={img.id}
+                    src={img.image_url}
+                    alt={img.description || details.name}
+                    className="w-full h-32 object-cover rounded-lg shadow-sm cursor-pointer hover:opacity-80 transition"
+                    title={img.description}
+                  />
+                ))}
+               </div>
+            </div>
+
+            {/* Địa điểm liên quan */}
+            <div className="bg-white rounded-xl shadow-lg p-6">
+               <h3 className="font-bold text-lg mb-4">Gợi ý liên quan</h3>
+               <div className="space-y-4">
+                {relatedPlaces
+                  .filter(p => p.id !== placeId) // Loại địa điểm hiện tại
+                  .map((place) => (
+                  <div 
+                    key={place.id}
+                    className="flex gap-4 p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition"
+                    // Chuyển sang địa điểm liên quan khi click
+                    onClick={() => window.location.href = `?place=${place.id}`} // Tạm thời reload, hoặc tốt hơn là setPlaceId(place.id)
+                  >
+                    <img src={place.thumbnail} alt={place.name} className="w-20 h-20 object-cover rounded-md" />
+                    <div>
+                      <h4 className="font-bold text-cyan-700">{place.name}</h4>
+                      <p className="text-xs text-gray-600 line-clamp-2">{place.description}</p>
+                    </div>
+                  </div>
+                ))}
+               </div>
+            </div>
+
+          </div>
+
+        </div>
+      </div>
+
+      {/* VR360 Modal (Giống ExplorePage) */}
+      {showVR && (
+        <div className="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl max-w-4xl w-full overflow-hidden">
+            <div className="p-4 border-b flex justify-between items-center">
+              <h3 className="font-bold text-lg">{details.name} - 360°</h3>
+              <button onClick={() => setShowVR(false)} className="text-gray-500 hover:text-gray-700">
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            <div className="aspect-video bg-black">
+              <a-scene embedded>
+                <a-sky src={vrImageUrl} crossOrigin="anonymous"></a-sky>
+                <a-camera position="0 0 0.1"></a-camera>
+              </a-scene>
+            </div>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+};
+
+
+
+// AI ChatBox (Giữ nguyên)
 function ChatBox() {
+  // ... (Toàn bộ code của ChatBox giữ nguyên như file gốc) ...
   const [message, setMessage] = useState("");
   const [chat, setChat] = useState([]);
   const [image, setImage] = useState(null);
@@ -1136,7 +1434,7 @@ function ChatBox() {
   );
 }
 
-// Footer
+// Footer (Giữ nguyên)
 const Footer = ({ setCurrentPage }) => (
   <footer className="bg-gray-800 text-white py-12">
     <div className="container mx-auto px-4">
@@ -1190,19 +1488,57 @@ const Footer = ({ setCurrentPage }) => (
 );
 
 // Main App
+// *** CẬP NHẬT: Thêm 'selectedPlaceId' và route cho trang 'details' ***
 const App = () => {
   const [currentPage, setCurrentPage] = useState('home');
+  const [selectedPlaceId, setSelectedPlaceId] = useState(null); // ID của địa điểm đang xem
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
 
+  // *** THÊM MỚI: Xử lý nếu URL có query ?place=... (để F5 trang chi tiết) ***
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const placeIdFromUrl = urlParams.get('place');
+    if (placeIdFromUrl) {
+      setSelectedPlaceId(parseInt(placeIdFromUrl));
+      setCurrentPage('details');
+    }
+  }, []);
+
+  // *** THÊM MỚI: Cập nhật URL khi chuyển trang chi tiết ***
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (currentPage === 'details' && selectedPlaceId) {
+      url.searchParams.set('place', selectedPlaceId);
+      window.history.pushState({}, '', url);
+    } else {
+      url.searchParams.delete('place');
+      window.history.pushState({}, '', url);
+    }
+  }, [currentPage, selectedPlaceId]);
+
+
   return (
     <div className="min-h-screen bg-white">
-      <NavBar setCurrentPage={setCurrentPage} setMobileMenuOpen={setMobileMenuOpen} mobileMenuOpen={mobileMenuOpen} />
+      <NavBar 
+        setCurrentPage={setCurrentPage} 
+        setMobileMenuOpen={setMobileMenuOpen} 
+        mobileMenuOpen={mobileMenuOpen}
+        setSelectedPlaceId={setSelectedPlaceId} // Truyền hàm set
+      />
       
-      {currentPage === 'home' && <HomePage setCurrentPage={setCurrentPage} />}
+      {/* Logic điều hướng trang */}
+      {currentPage === 'home' && <HomePage 
+                                    setCurrentPage={setCurrentPage} 
+                                    setSelectedPlaceId={setSelectedPlaceId} 
+                                  />}
       {currentPage === 'explore' && <ExplorePage />}
       {currentPage === 'tools' && <ToolsPage />}
       {currentPage === 'map' && <MapPage />}
+      {currentPage === 'details' && <DestinationDetailPage 
+                                      placeId={selectedPlaceId} 
+                                      setCurrentPage={setCurrentPage} 
+                                    />}
       
       <Footer setCurrentPage={setCurrentPage} />
 

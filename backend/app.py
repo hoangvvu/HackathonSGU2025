@@ -3,35 +3,87 @@ from flask_cors import CORS
 from google import genai
 from dotenv import load_dotenv
 import os
-import base64
+import pyodbc
 
 # Load biến môi trường
 load_dotenv()
 
 app = Flask(__name__)
-
-# ✅ Bật CORS cho React frontend
+# Đã xử lý CORS: cho phép cả localhost:3000 và 127.0.0.1:3000
 CORS(app, resources={r"/api/*": {"origins": ["http://localhost:3000", "http://127.0.0.1:3000"]}})
 
-# ✅ Lấy API key
+# Lưu ý: Hàm @app.after_request ở đầu file đã bị loại bỏ vì dùng Flask-CORS
+
+# --- CẤU HÌNH GEMINI AI ---
 API_KEY = os.getenv("GEMINI_API_KEY")
 if not API_KEY:
-    raise ValueError("❌ Thiếu GEMINI_API_KEY trong file .env")
-
-# ✅ Khởi tạo Gemini client
+    # Không cần raise, chỉ cần cảnh báo
+    print("⚠️ Thiếu GEMINI_API_KEY trong file .env. Các tính năng AI sẽ không hoạt động.")
 client = genai.Client(api_key=API_KEY)
 
 
+# --- CẤU HÌNH DATABASE (SQL SERVER) ---
+# ⚠️ CẬP NHẬT 3 TRƯỜNG NÀY ĐỂ KẾT NỐI DATABASE THÀNH CÔNG ⚠️
+# SỬ DỤNG 'r' (raw string) để xử lý dấu '\'
+DB_SERVER = r'LAPTOP-UE0L3QPE\SQLEXPRESS'
+DB_DATABASE = 'hackathon' 
+DB_USERNAME = 'sa'
+DB_PASSWORD = 'anhkhoa020305'
+# ĐÃ SỬA LỖI: Xóa dấu nháy đơn thừa ở cuối
+DB_DRIVER = '{ODBC Driver 17 for SQL Server}'
+
+CONNECTION_STRING = f"DRIVER={DB_DRIVER};SERVER={DB_SERVER};DATABASE={DB_DATABASE};UID={DB_USERNAME};PWD={DB_PASSWORD}"
+
+def get_db_conn():
+    """Hàm helper để lấy kết nối DB"""
+    try:
+        conn = pyodbc.connect(CONNECTION_STRING)
+        return conn
+    except Exception as e:
+        # IN LỖI RÕ RÀNG HƠN
+        print("="*50)
+        print("❌ LỖI KẾT NỐI DATABASE SQL SERVER!")
+        print(f"   Lỗi chi tiết: {e}")
+        print("   Vui lòng kiểm tra:")
+        print("   1. Đã cài đặt thư viện 'pyodbc' chưa (pip install pyodbc).")
+        print(f"   2. Chuỗi kết nối đang dùng: {CONNECTION_STRING}")
+        print("   3. Đã chạy file hackathonDB.sql để tạo database 'hackathon' chưa.")
+        print("="*50)
+        return None
+
+def query_db(query, params=()):
+    """Hàm helper để chạy query và trả về list of dicts"""
+    conn = get_db_conn()
+    if not conn:
+        return []
+    try:
+        cursor = conn.cursor()
+        cursor.execute(query, params)
+        columns = [column[0] for column in cursor.description]
+        results = [dict(zip(columns, row)) for row in cursor.fetchall()]
+        return results
+    except Exception as e:
+        print(f"❌ Lỗi query DB: {e}")
+        return []
+    finally:
+        if conn:
+            conn.close()
+
+# --- API CHAT (Giữ nguyên) ---
 @app.route("/api/chat", methods=["POST"])
 def chat():
+    # ... (giữ nguyên logic chat) ...
     message = request.form.get("message", "").strip()
     image = request.files.get("image")
 
     if not message and not image:
         return jsonify({"reply": "⚠️ Vui lòng nhập tin nhắn hoặc tải ảnh."})
 
+    # Nếu không có API key, không gọi AI
+    if not API_KEY:
+        return jsonify({"reply": "❌ Gemini API Key không khả dụng. Không thể thực hiện chức năng AI."})
+
     try:
-        # 🖼️ Nếu có ảnh
         if image:
             image_bytes = image.read()
             response = client.models.generate_content(
@@ -51,7 +103,6 @@ def chat():
                     }
                 ],
             )
-        # 💬 Nếu chỉ có văn bản
         else:
             response = client.models.generate_content(
                 model="gemini-2.0-flash",
@@ -64,17 +115,128 @@ def chat():
 
     except Exception as e:
         print("🔥 Lỗi khi gọi Gemini:", str(e))
-        return jsonify({"reply": f"❌ Lỗi server: {str(e)}"})
+        return jsonify({"reply": f"❌ Lỗi server khi gọi AI: {str(e)}"})
 
 
-# ✅ Thêm header CORS thủ công cho chắc
-@app.after_request
-def add_cors_headers(response):
-    response.headers["Access-Control-Allow-Origin"] = "http://localhost:3000"
-    response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
-    response.headers["Access-Control-Allow-Methods"] = "POST, GET, OPTIONS"
-    return response
+# --- CÁC API CHO DATABASE (Giữ nguyên) ---
+
+@app.route("/api/search-places", methods=["GET"])
+def search_places():
+    """API tìm kiếm địa điểm từ DB"""
+    search_term = request.args.get("q", "").strip()
+
+    if not search_term:
+        return jsonify([])
+
+    # Tìm kiếm (LIKE) và lấy 1 ảnh thumbnail. Dùng LEFT JOIN để lấy cả những chỗ chưa có review.
+    query = """
+    SELECT 
+        p.id, 
+        p.name, 
+        p.description,
+        p.address,
+        (SELECT TOP 1 i.image_url FROM Images i WHERE i.place_id = p.id) as thumbnail,
+        (SELECT AVG(rating) FROM Reviews WHERE place_id = p.id) as avg_rating
+    FROM Places p
+    WHERE p.name LIKE ? OR p.description LIKE ?
+    """
+    like_param = f"%{search_term}%"
+    
+    places = query_db(query, (like_param, like_param))
+    return jsonify(places)
 
 
+# *** THÊM MỚI API: Lấy các địa điểm được đánh giá cao nhất ***
+@app.route("/api/top-rated-places", methods=["GET"])
+def get_top_rated_places():
+    """API Lấy 6 địa điểm có rating cao nhất từ DB (dành cho trang Khám phá)"""
+    query = """
+    SELECT TOP 6
+        p.id, 
+        p.name, 
+        p.description,
+        p.address,
+        (SELECT TOP 1 i.image_url FROM Images i WHERE i.place_id = p.id) as image, -- Đổi tên thành 'image' cho khớp App.js
+        (SELECT AVG(rating) FROM Reviews WHERE place_id = p.id) as rating_score, -- Đổi tên thành 'rating_score'
+        'Database' as category, -- Dùng 'Database' thay cho category AI
+        'VR_DEMO' as vr360 -- Placeholder
+    FROM Places p
+    JOIN Reviews r ON p.id = r.place_id
+    GROUP BY p.id, p.name, p.description, p.address
+    HAVING AVG(r.rating) >= 3 -- Chỉ lấy những nơi có rating trung bình từ 3 sao trở lên
+    ORDER BY rating_score DESC, p.id
+    """
+    # Lưu ý: Cột AVG(rating) trong DB sẽ trả về float
+    places = query_db(query)
+    
+    # Cần xử lý kết quả để khớp với cấu trúc `ExplorePage` đã định nghĩa
+    formatted_places = []
+    for place in places:
+        formatted_places.append({
+            "id": place['id'],
+            "name": place['name'],
+            "description": place['description'],
+            "image": place['image'] or 'https://via.placeholder.com/300x200?text=No+Image',
+            "rating": round(place['rating_score'], 1), # Làm tròn 1 chữ số thập phân
+            "category": place['category'],
+            "vr360": 'https://upload.wikimedia.org/wikipedia/commons/f/f0/Halong_Bay_Vietnam_360_main_cav.jpg'
+        })
+    
+    return jsonify(formatted_places)
+
+
+@app.route("/api/place/<int:place_id>", methods=["GET"])
+def get_place_details(place_id):
+    # 1. Lấy thông tin cơ bản của địa điểm
+    place_details = query_db("SELECT * FROM Places WHERE id = ?", (place_id,))
+    if not place_details:
+        return jsonify({"error": "Không tìm thấy địa điểm"}), 404
+        
+    # 2. Lấy danh sách ảnh
+    images = query_db("SELECT id, image_url, description FROM Images WHERE place_id = ?", (place_id,))
+    
+    # 3. Lấy danh sách reviews (JOIN với Users để lấy tên)
+    reviews = query_db("""
+    SELECT 
+        r.id, 
+        r.rating, 
+        r.comment, 
+        r.created_at, 
+        u.name as user_name
+    FROM Reviews r
+    LEFT JOIN Users u ON r.user_id = u.id -- Dùng LEFT JOIN phòng trường hợp user bị xóa
+    WHERE r.place_id = ?
+    ORDER BY r.created_at DESC
+    """, (place_id,))
+    
+    # Gom 3 kết quả lại
+    response_data = {
+        "details": place_details[0], 
+        "images": images,
+        "reviews": reviews
+    }
+    
+    return jsonify(response_data)
+
+
+@app.route("/api/related-places", methods=["GET"])
+def get_related_places():
+    """API lấy các địa điểm liên quan (demo: lấy 3 cái ngẫu nhiên)"""
+    query = """
+    SELECT TOP 3
+        p.id, 
+        p.name, 
+        p.description,
+        (SELECT TOP 1 i.image_url 
+         FROM Images i 
+         WHERE i.place_id = p.id) as thumbnail
+    FROM Places p
+    ORDER BY NEWID() 
+    """
+    places = query_db(query)
+    return jsonify(places)
+
+
+# --- Khai báo chính ---
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, port=5000)
