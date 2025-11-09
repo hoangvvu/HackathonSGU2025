@@ -8,7 +8,7 @@ import {
   LayoutGrid, Shield, TrendingUp, BarChart3
 } from 'lucide-react';
 import 'aframe';
-
+import { toImg } from "./utils/media.js";
 // *** Import Leaflet và CSS ***
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -40,7 +40,7 @@ L.Marker.prototype.options.icon = DefaultIcon;
 
 // Navigation
 // *** CẬP NHẬT: Thêm 'setSelectedPlaceId' để reset khi về home ***
-const NavBar = ({ setCurrentPage, setMobileMenuOpen, mobileMenuOpen, setSelectedPlaceId, authUser, onOpenLogin, onOpenRegister, onLogout }) => {
+const NavBar = ({ setCurrentPage, setMobileMenuOpen, mobileMenuOpen, setSelectedPlaceId, authUser, onOpenLogin, onOpenRegister, onLogout,  setShowProfile, setShowChangePw }) => {
   const goHome = () => { setCurrentPage('home'); setSelectedPlaceId(null); };
 
   const navigate = (page) => {
@@ -97,21 +97,19 @@ const NavBar = ({ setCurrentPage, setMobileMenuOpen, mobileMenuOpen, setSelected
     </>
   ) : (
     <>
-      <div className="flex items-center gap-3 bg-white/10 px-3 py-1.5 rounded-full">
-        <div className="bg-white text-cyan-600 w-8 h-8 rounded-full flex items-center justify-center font-bold">
-          {(authUser?.name?.[0] ||
-            authUser?.username?.[0] ||
-            authUser?.email?.[0] ||
-            'U'
-          ).toUpperCase()}
-        </div>
-        <div className="text-sm leading-tight">
-          <div className="font-semibold leading-4">
-            {authUser?.name || authUser?.username || 'Người dùng'}
-          </div>
-          <div className="text-white/80 text-xs leading-4">{authUser?.email}</div>
-        </div>
-      </div>
+      <button
+  onClick={() => setShowProfile(true)}  // 👈 khi click sẽ mở modal hồ sơ
+  className="flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-full hover:bg-white/20 transition"
+  title="Xem hồ sơ"
+>
+  <div className="bg-white text-cyan-600 w-8 h-8 rounded-full flex items-center justify-center font-bold">
+    {authUser.name?.[0]?.toUpperCase() || authUser.email?.[0]?.toUpperCase()}
+  </div>
+  <div className="text-sm text-left">
+    <div className="font-semibold leading-4">{authUser.name || 'Người dùng'}</div>
+    <div className="text-white/80 text-xs leading-4">{authUser.email}</div>
+  </div>
+</button>
           
       <button
         onClick={onLogout}
@@ -299,108 +297,115 @@ const HomePage = ({ setCurrentPage, setSelectedPlaceId }) => {
   };
 
   return (
-    <div className="pt-16">
-      {/* Hero Section */}
-      <div className="relative h-screen">
-        {/* Overlay đổi theo ngày/đêm */}
-        <div
-          className={`absolute inset-0 bg-gradient-to-r ${
-            isDay ? 'from-cyan-500/90 to-blue-600/90' : 'from-indigo-900/90 to-slate-900/90'
-          } z-10`}
-        />
-        <img
-          src="https://images.unsplash.com/photo-1528127269322-539801943592?w=1600"
-          alt="Vietnam"
-          className="w-full h-full object-cover"
-        />
+  <div className="pt-0">
+    {/* Hero Section */}
+    <section className="relative -mt-16 min-h-[calc(100vh-64px)] pb-12">
+      {/* Ảnh nền: tuyệt đối để không chiếm chỗ */}
+      <img
+        src="https://images.unsplash.com/photo-1528127269322-539801943592?w=1600"
+        alt="Vietnam"
+        className="absolute inset-0 w-full h-full object-cover -z-10 pointer-events-none select-none"
+        draggable="false"
+      />
 
-        <div className="absolute inset-0 z-20 flex flex-col items-center justify-center text-white px-4">
-          <h1 className="text-4xl md:text-6xl font-bold mb-4 text-center">TRAVINAI</h1>
-          <p className="text-xl md:text-2xl mb-8 text-center max-w-3xl">
-            Smart travel with AI
-          </p>
+      {/* Overlay đổi theo ngày/đêm */}
+      <div
+        className={`absolute inset-0 bg-gradient-to-r ${
+          isDay ? 'from-cyan-500/90 to-blue-600/90' : 'from-indigo-900/90 to-slate-900/90'
+        } z-0`}
+      />
 
-          {/* Card thời tiết */}
-          {weather && (
-            <div className="bg-white/20 backdrop-blur-lg rounded-2xl p-6 mb-8 text-center">
-              <div className="flex items-center justify-center gap-4">
-                <img
-                  src={`https://openweathermap.org/img/wn/${weather.icon}@2x.png`}
-                  alt="weather"
-                  className="w-16 h-16"
-                />
-                <div className="text-left">
-                  <div className="flex items-center gap-2">
-                    <p className="text-3xl font-bold">{weather.temp}°C</p>
-                    <span className={`text-xs px-2 py-1 rounded-full ${isDay ? 'bg-yellow-300 text-yellow-900' : 'bg-indigo-300 text-indigo-900'}`}>
-                      {isDay ? 'Ban ngày' : 'Ban đêm'}
-                    </span>
-                  </div>
-                  <p className="text-sm capitalize">{weather.description}</p>
-                  <p className="text-xs opacity-80">📍 {weather.city}</p>
-                  {(sunrise || sunset) && (
-                    <div className="mt-2 text-xs opacity-90">
-                      {sunrise && <>🌅 {sunrise.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</>}
-                      {'  ·  '}
-                      {sunset && <>🌇 {sunset.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</>}
-                    </div>
-                  )}
-                  {lastUpdated && (
-                    <div className="text-[11px] opacity-70 mt-1">
-                      Cập nhật: {lastUpdated.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
-                    </div>
-                  )}
+      {/* Nội dung hero */}
+      <div className="relative z-10 flex flex-col items-center justify-start text-white px-4 pt-10 md:pt-14 pb-10">
+        <h1 className="text-4xl md:text-6xl font-bold mb-4 text-center">TRAVINAI</h1>
+        <p className="text-xl md:text-2xl mb-8 text-center max-w-3xl">Smart travel with AI</p>
+
+        {/* Card thời tiết */}
+        {weather && (
+          <div className="bg-white/20 backdrop-blur-lg rounded-2xl p-6 mb-8 text-center">
+            <div className="flex items-center justify-center gap-4">
+              <img
+                src={`https://openweathermap.org/img/wn/${weather.icon}@2x.png`}
+                alt="weather"
+                className="w-16 h-16"
+              />
+              <div className="text-left">
+                <div className="flex items-center gap-2">
+                  <p className="text-3xl font-bold">{weather.temp}°C</p>
+                  <span
+                    className={`text-xs px-2 py-1 rounded-full ${
+                      isDay ? 'bg-yellow-300 text-yellow-900' : 'bg-indigo-300 text-indigo-900'
+                    }`}
+                  >
+                    {isDay ? 'Ban ngày' : 'Ban đêm'}
+                  </span>
                 </div>
+                <p className="text-sm capitalize">{weather.description}</p>
+                <p className="text-xs opacity-80">📍 {weather.city}</p>
+                {(sunrise || sunset) && (
+                  <div className="mt-2 text-xs opacity-90">
+                    {sunrise && <>🌅 {sunrise.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</>}
+                    {'  ·  '}
+                    {sunset && <>🌇 {sunset.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</>}
+                  </div>
+                )}
+                {lastUpdated && (
+                  <div className="text-[11px] opacity-70 mt-1">
+                    Cập nhật: {lastUpdated.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+                  </div>
+                )}
               </div>
             </div>
-          )}
-
-          {/* Smart Search */}
-          <div className="w-full max-w-3xl">
-            <div className="bg-white rounded-full shadow-2xl p-2 flex items-center mb-4">
-              <Search className="w-6 h-6 text-gray-400 ml-4" />
-              <input
-                type="text"
-                placeholder="Tìm tên địa điểm (VD: Ba Na Hills, Hội An...)"
-                className="flex-1 px-4 py-3 text-gray-800 outline-none"
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') handleSmartSearch(); }}
-              />
-              <button
-                onClick={handleSmartSearch}
-                disabled={loading}
-                className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white px-8 py-3 rounded-full hover:shadow-lg transition disabled:opacity-50"
-              >
-                {loading ? '🔍 Đang tìm...' : 'Tìm kiếm'}
-              </button>
-            </div>
           </div>
+        )}
 
-          {/* Kết quả tìm kiếm */}
-          {recommendations.length > 0 && (
-            <div className="w-full max-w-4xl mt-8 grid md:grid-cols-3 gap-4">
-              {recommendations.map((rec) => (
-                <div
-                  key={rec.id}
-                  className="bg-white rounded-xl p-4 text-gray-800 shadow-lg cursor-pointer hover:shadow-2xl hover:scale-105 transition"
-                  onClick={() => handleRecommendationClick(rec.id)}
-                >
-                  <img
-                    src={rec.thumbnail || 'https://via.placeholder.com/300x200'}
-                    alt={rec.name}
-                    className="w-full h-32 object-cover rounded-lg mb-3"
-                  />
-                  <h3 className="font-bold text-lg mb-2">📍 {rec.name}</h3>
-                  <p className="text-sm text-gray-600 mb-2 line-clamp-2">{rec.description}</p>
-                </div>
-              ))}
-            </div>
-          )}
+        {/* Smart Search */}
+        <div className="w-full max-w-3xl">
+          <div className="bg-white rounded-full shadow-2xl p-2 flex items-center mb-4">
+            <Search className="w-6 h-6 text-gray-400 ml-4" />
+            <input
+              type="text"
+              placeholder="Tìm tên địa điểm (VD: Ba Na Hills, Hội An...)"
+              className="flex-1 px-4 py-3 text-gray-800 outline-none"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleSmartSearch();
+              }}
+            />
+            <button
+              onClick={handleSmartSearch}
+              disabled={loading}
+              className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white px-8 py-3 rounded-full hover:shadow-lg transition disabled:opacity-50"
+            >
+              {loading ? '🔍 Đang tìm...' : 'Tìm kiếm'}
+            </button>
+          </div>
         </div>
-      </div>
 
-      {/* Features (Giữ nguyên) */}
+        {/* Kết quả tìm kiếm */}
+        {recommendations.length > 0 && (
+          <div className="w-full max-w-4xl mt-8 grid md:grid-cols-3 gap-4">
+            {recommendations.map((rec) => (
+              <div
+                key={rec.id}
+                className="bg-white rounded-xl p-4 text-gray-800 shadow-lg cursor-pointer hover:shadow-2xl hover:scale-105 transition"
+                onClick={() => handleRecommendationClick(rec.id)}
+              >
+                <img
+                  src={toImg(rec.thumbnail) || 'https://via.placeholder.com/300x200'}
+                  alt={rec.name}
+                  className="w-full h-32 object-cover rounded-lg mb-3"
+                />
+                <h3 className="font-bold text-lg mb-2">📍 {rec.name}</h3>
+                <p className="text-sm text-gray-600 mb-2 line-clamp-2">{rec.description}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
+
       <div className="py-20 bg-gray-50">
         <div className="container mx-auto px-4">
           <h2 className="text-3xl md:text-4xl font-bold text-center mb-12 text-gray-800">
@@ -409,7 +414,7 @@ const HomePage = ({ setCurrentPage, setSelectedPlaceId }) => {
           <div className="grid md:grid-cols-4 gap-6">
             {[
               { icon: Sun, title: 'Dự báo thời tiết', desc: 'API OpenWeatherMap', color: 'orange' },
-              { icon: Compass, title: 'Gợi ý AI', desc: 'Gemini AI tư vấn điểm đến', color: 'purple' },
+              { icon: Compass, title: 'Gợi ý AI', desc: 'Tư vấn điểm đến', color: 'purple' },
               { icon: Map, title: 'Bản đồ Leaflet', desc: 'React Leaflet', color: 'blue' }, 
               { icon: Languages, title: 'Phiên dịch AI', desc: 'Dịch & Lồng tiếng', color: 'green' }
             ].map((feature, idx) => (
@@ -430,9 +435,8 @@ const HomePage = ({ setCurrentPage, setSelectedPlaceId }) => {
 const ToolsMenu = ({ setCurrentPage }) => {
   const cards = [
     { key: 'currency', title: 'Đổi tiền tệ', desc: 'Tỷ giá thời gian thực', Icon: DollarSign, color: 'text-green-500', btn: 'Mở trang' },
-    { key: 'translate', title: 'Phiên dịch AI', desc: 'Auto-detect → Tiếng Việt', Icon: Languages, color: 'text-purple-500', btn: 'Mở trang' },
+    { key: 'translate', title: 'Phiên dịch AI', desc: 'Dịch sang Tiếng Việt', Icon: Languages, color: 'text-purple-500', btn: 'Mở trang' },
     { key: 'cost', title: 'Dự đoán chi phí (AI)', desc: 'Ước tính theo ngày/người', Icon: Navigation, color: 'text-blue-500', btn: 'Mở trang' },
-    { key: 'directions', title: 'Chỉ đường', desc: 'Google Maps Directions', Icon: Map, color: 'text-red-500', btn: 'Mở trang' },
   ];
 
   return (
@@ -930,31 +934,6 @@ Chỉ trả về bản dịch thuần văn bản, không ghi chú hay giải th�
   );
 };
 
-const DirectionsPage = ({ setCurrentPage }) => {
-  return (
-    <div className="pt-24 pb-12 min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 max-w-4xl">
-        <button onClick={() => setCurrentPage('tools')} className="text-cyan-600 hover:underline mb-4">← Quay lại Công cụ</button>
-        <div className="bg-white rounded-xl shadow-lg p-6">
-          <h2 className="text-2xl font-bold mb-6 flex items-center gap-2">
-            <Map className="w-6 h-6 text-red-500" /> Chỉ đường (Google Maps API)
-          </h2>
-          <div className="bg-gray-100 h-96 rounded-lg flex items-center justify-center">
-            <div className="text-center">
-              <MapPinned className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-              <p className="text-gray-600 mb-4">Nhập điểm đến để xem chỉ đường</p>
-              <input type="text" placeholder="VD: Vịnh Hạ Long" className="px-4 py-2 border rounded-lg mb-2" />
-              <button className="block mx-auto bg-red-500 text-white px-6 py-2 rounded-lg hover:bg-red-600">
-                Chỉ đường
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 // Map Page
 const MapPage = () => {
   // ... (Toàn bộ code của MapPage giữ nguyên) ...
@@ -1036,41 +1015,8 @@ const MapPage = () => {
         )}
 
         {/* Leaflet Map */}
-        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-          <div className="p-4 border-b">
-            <h3 className="font-bold text-lg">Bản đồ vị trí (React Leaflet)</h3>
-          </div>
-          {userLocation ? (
-            <MapContainer 
-              center={[userLocation.lat, userLocation.lng]} 
-              zoom={13} 
-              scrollWheelZoom={true} 
-              style={{ height: '500px', width: '100%' }} 
-            >
-              <TileLayer
-                attribution='© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              />
-              <Marker position={[userLocation.lat, userLocation.lng]}>
-                <Popup>
-                  <div className="text-center">
-                    <h4 className="font-bold">{currentWeather?.city || 'Vị trí của bạn'}</h4>
-                    {currentWeather && (
-                      <p>{currentWeather.temp}°C, {currentWeather.description}</p>
-                    )}
-                  </div>
-                </Popup>
-              </Marker>
-            </MapContainer>
-          ) : (
-            <div className="h-96 bg-gray-200 flex items-center justify-center">
-              <div className="text-center">
-                <MapPinned className="w-16 h-16 mx-auto mb-4 text-gray-400 animate-pulse" />
-                <p className="text-gray-600">Đang tải vị trí và bản đồ...</p>
-              </div>
-            </div>
-          )}
-        </div>
+       <div className="bg-white rounded-xl shadow-lg overflow-hidden"> <div className="p-4 border-b"> <h3 className="font-bold text-lg">Bản đồ vị trí (React Leaflet)</h3> </div> {userLocation ? ( <MapContainer center={[userLocation.lat, userLocation.lng]} zoom={13} scrollWheelZoom={true} style={{ height: '500px', width: '100%' }} > <TileLayer attribution='© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" /> <Marker position={[userLocation.lat, userLocation.lng]}> <Popup> <div className="text-center"> <h4 className="font-bold">{currentWeather?.city || 'Vị trí của bạn'}</h4> {currentWeather && ( <p>{currentWeather.temp}°C, {currentWeather.description}</p> )} </div> </Popup> </Marker> </MapContainer> ) : ( <div className="h-96 bg-gray-200 flex items-center justify-center"> <div className="text-center"> <MapPinned className="w-16 h-16 mx-auto mb-4 text-gray-400 animate-pulse" /> <p className="text-gray-600">Đang tải vị trí và bản đồ...</p> </div> </div> )} </div>
+
        
         {/* Weather Suggestions */}
         <div className="mt-8 bg-white rounded-xl shadow-lg p-6">
@@ -1361,11 +1307,8 @@ const DestinationDetailPage = ({ placeId, setCurrentPage }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showVR, setShowVR] = useState(false);
-  const [days, setDays] = useState(3);
-  const [people, setPeople] = useState(2); 
-  const [costPrediction, setCostPrediction] = useState(null);
-  const [loadingCost, setLoadingCost] = useState(false);
-
+  
+  
   // Fetch data chi tiết
   useEffect(() => {
     const fetchDetails = async () => {
@@ -1393,29 +1336,6 @@ const DestinationDetailPage = ({ placeId, setCurrentPage }) => {
     fetchDetails();
     fetchRelated();
   }, [placeId]);
-
-  // Hàm dự đoán chi phí
-  const handleCostPrediction = async () => {
-    if (!placeData?.details?.name) return;
-    setLoadingCost(true);
-    try {
-      const response = await axios.post('http://127.0.0.1:5000/api/chat',
-        new URLSearchParams({
-          message: `Ước tính chi phí du lịch ${placeData.details.name} cho ${people} người trong ${days} ngày. Bao gồm: vé máy bay/di chuyển, khách sạn, ăn uống, vé tham quan. Trả về JSON: {"transport": số, "hotel": số, "food": số, "tickets": số, "total": số}. Chỉ trả JSON, không giải thích.`
-        })
-      );
-      const jsonMatch = response.data.reply.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        const costs = JSON.parse(jsonMatch[0]);
-        setCostPrediction(costs);
-      }
-    } catch (error) {
-      console.error('Lỗi dự đoán:', error);
-      setCostPrediction(null);
-    } finally {
-      setLoadingCost(false);
-    }
-  };
 
   // Helper render sao
   const renderStars = (rating) => {
@@ -1457,7 +1377,11 @@ const DestinationDetailPage = ({ placeId, setCurrentPage }) => {
   }
 
   const { details, images, reviews } = placeData;
-
+  const toImg = (path) => {
+  if (!path) return '';
+  const clean = path.replace(/^\/+/, ''); // bỏ / đầu nếu có
+  return clean.startsWith('http') ? clean : `http://127.0.0.1:5000/${clean}`;
+};
   return (
     <div className="pt-20 pb-12 bg-gray-50">
       <div className="container mx-auto px-4">
@@ -1474,7 +1398,7 @@ const DestinationDetailPage = ({ placeId, setCurrentPage }) => {
         {/* Header (Ảnh bìa và tên) */}
         <div className="relative rounded-xl shadow-lg overflow-hidden h-96 mb-8">
           <img 
-            src={images[0]?.image_url || 'https://via.placeholder.com/1200x400'} 
+            src={toImg(images[0]?.image_url) || 'https://via.placeholder.com/1200x400'}
             alt={details.name}
             className="w-full h-full object-cover"
           />
@@ -1506,72 +1430,6 @@ const DestinationDetailPage = ({ placeId, setCurrentPage }) => {
               </p>
             </div>
 
-            {/* Dự đoán chi phí */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
-              <h2 className="text-3xl font-bold mb-6 flex items-center gap-2">
-                <DollarSign className="w-8 h-8 text-blue-500" />
-                Dự đoán chi phí (AI)
-              </h2>
-              <div className="grid md:grid-cols-2 gap-4 mb-6">
-                <div>
-                  <label className="block text-sm font-semibold mb-2">Số ngày: {days}</label>
-                  <input
-                    type="range"
-                    min="1"
-                    max="14"
-                    value={days}
-                    onChange={(e) => setDays(parseInt(e.target.value))}
-                    className="w-full"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold mb-2">Số người: {people}</label>
-                  <input
-                    type="range"
-                    min="1"
-                    max="10"
-                    value={people}
-                    onChange={(e) => setPeople(parseInt(e.target.value))}
-                    className="w-full"
-                  />
-                </div>
-              </div>
-              <button
-                onClick={handleCostPrediction}
-                disabled={loadingCost}
-                className="w-full bg-blue-500 text-white py-3 rounded-lg font-semibold hover:bg-blue-600 transition disabled:opacity-50"
-              >
-                {loadingCost ? '🤖 AI đang tính...' : `🤖 Ước tính cho ${people} người, ${days} ngày`}
-              </button>
-              {costPrediction && (
-                <div className="mt-6 grid md:grid-cols-2 gap-4">
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
-                      <span className="flex items-center gap-2 text-blue-700"><Navigation className="w-4 h-4" /> Di chuyển</span>
-                      <span className="font-bold">{costPrediction.transport?.toLocaleString()}đ</span>
-                    </div>
-                    <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
-                      <span className="flex items-center gap-2 text-green-700"><Building className="w-4 h-4" /> Khách sạn</span>
-                      <span className="font-bold">{costPrediction.hotel?.toLocaleString()}đ</span>
-                    </div>
-                    <div className="flex justify-between items-center p-3 bg-yellow-50 rounded-lg">
-                      <span className="flex items-center gap-2 text-yellow-700"><Utensils className="w-4 h-4" /> Ăn uống</span>
-                      <span className="font-bold">{costPrediction.food?.toLocaleString()}đ</span>
-                    </div>
-                    <div className="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
-                      <span className="flex items-center gap-2 text-purple-700"><Ticket className="w-4 h-4" /> Vé tham quan</span>
-                      <span className="font-bold">{costPrediction.tickets?.toLocaleString()}đ</span>
-                    </div>
-                  </div>
-                  <div className="bg-gradient-to-br from-cyan-500 to-blue-600 text-white rounded-xl p-6 flex flex-col justify-center text-center">
-                    <p className="text-sm mb-2">Tổng chi phí dự kiến</p>
-                    <p className="text-4xl font-bold mb-4">{costPrediction.total?.toLocaleString()}đ</p>
-                    <p className="text-xs opacity-80">(Cho {people} người / {days} ngày)</p>
-                  </div>
-                </div>
-              )}
-            </div>
-
             {/* Đánh giá (Reviews) */}
             <div className="bg-white rounded-xl shadow-lg p-6">
               <h2 className="text-3xl font-bold mb-6">Đánh giá từ du khách</h2>
@@ -1601,40 +1459,52 @@ const DestinationDetailPage = ({ placeId, setCurrentPage }) => {
           <div className="lg:col-span-1 space-y-8">
             
             {/* Bản đồ Mini (Leaflet) */}
-            <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-              <div className="p-4 border-b">
-                <h3 className="font-bold text-lg">Vị trí trên bản đồ</h3>
-              </div>
-              <MapContainer
-                center={[details.lat, details.lng]}
-                zoom={14}
-                style={{ height: '300px', width: '100%' }}
-                scrollWheelZoom={false} 
-              >
-                <TileLayer
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                />
-                <Marker position={[details.lat, details.lng]}>
-                  <Popup>{details.name}</Popup>
-                </Marker>
-              </MapContainer>
-            </div>
+<div className="bg-white rounded-xl shadow-lg">
+  <div className="p-4 border-b relative z-10">
+    <h3 className="font-bold text-lg">Vị trí trên bản đồ</h3>
+  </div>
 
-            {/* Album ảnh */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
-               <h3 className="font-bold text-lg mb-4">Album ảnh</h3>
-               <div className="grid grid-cols-2 gap-4">
-                {images.length > 0 ? images.map((img) => (
-                  <img 
-                    key={img.id}
-                    src={img.image_url}
-                    alt={img.description || details.name}
-                    className="w-full h-32 object-cover rounded-lg shadow-sm cursor-pointer hover:opacity-80 transition"
-                    title={img.description}
-                  />
-                )) : <p className="text-sm text-gray-500 col-span-2">Chưa có ảnh cho địa điểm này.</p>}
-               </div>
-            </div>
+  {/* Bọc map để tránh tràn */}
+  <div className="relative rounded-b-xl overflow-hidden">
+    <div className="w-full h-[300px]">
+      <MapContainer
+        center={[details.lat || 10.762622, details.lng || 106.660172]}
+        zoom={14}
+        scrollWheelZoom={false}
+        className="w-full h-full rounded-none"
+        style={{ zIndex: 0 }}
+      >
+        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+        <Marker position={[details.lat, details.lng]}>
+          <Popup>{details.name}</Popup>
+        </Marker>
+      </MapContainer>
+    </div>
+  </div>
+</div>
+
+           {/* Album ảnh */}
+<div className="bg-white rounded-xl shadow-lg p-6">
+  <h3 className="font-bold text-lg mb-4">Album ảnh</h3>
+  <div className="grid grid-cols-2 gap-4">
+    {images.length > 0 ? (
+      images.map((img) => (
+        <img 
+          key={img.id}
+          src={toImg(img.image_url)}   // ✅ Thay chỗ này
+          alt={img.description || details.name}
+          className="w-full h-32 object-cover rounded-lg shadow-sm cursor-pointer hover:opacity-80 transition"
+          title={img.description}
+        />
+      ))
+    ) : (
+      <p className="text-sm text-gray-500 col-span-2">
+        Chưa có ảnh cho địa điểm này.
+      </p>
+    )}
+  </div>
+</div>
+
 
             {/* Địa điểm liên quan */}
             <div className="bg-white rounded-xl shadow-lg p-6">
@@ -1655,7 +1525,12 @@ const DestinationDetailPage = ({ placeId, setCurrentPage }) => {
                       window.location.href = `?place=${place.id}`;
                     }}
                   >
-                    <img src={place.thumbnail || 'https://via.placeholder.com/100x100'} alt={place.name} className="w-20 h-20 object-cover rounded-md" />
+                    <img
+  src={toImg(place.thumbnail) || 'https://via.placeholder.com/100x100'}
+  alt={place.name}
+  className="w-20 h-20 object-cover rounded-md"
+/>
+
                     <div>
                       <h4 className="font-bold text-cyan-700">{place.name}</h4>
                       <p className="text-xs text-gray-600 line-clamp-2">{place.description}</p>
@@ -1760,13 +1635,13 @@ function ChatBox() {
   return (
     <div className="bg-gray-800 rounded-xl shadow-2xl flex flex-col" style={{ width: "400px", maxWidth: "90vw", height: "550px" }}>
       <div className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white p-4 rounded-t-xl text-center font-bold text-lg">
-        🤖 AI Trợ lý (Gemini)
+        TRAVI - Trợ lý AI
       </div>
       <div className="flex-1 overflow-y-auto p-4 space-y-4" style={{ scrollbarWidth: 'thin', scrollbarColor: '#4f46e5 #2d3748' }}>
         {chat.length === 0 ? (
           <div className="text-center mt-8">
-            <p className="text-gray-400 mb-4">💬 Xin chào! Tôi là AI Gemini</p>
-            <p className="text-gray-500 text-sm">Hỏi tôi về điểm đến, chi phí, dịch văn bản, hoặc gửi ảnh!</p>
+            <p className="text-gray-400 mb-4">Xin chào! Tôi là TRAVIN</p>
+            <p className="text-gray-500 text-sm">Hỏi tôi về điểm đến, chi phí, dịch văn bản, hoặc gửi ảnh để tôi có thể nhận diện các địa điểm nhé!</p>
           </div>
         ) : (
           chat.map((msg, i) => (
@@ -2160,64 +2035,6 @@ JSON:
     </div>
   );
 };
-const ProfileModal = ({ user, onClose, onSaved }) => {
-  const [name, setName] = React.useState(user?.name || "");
-  const [username, setUsername] = React.useState(user?.username || "");
-  const [email, setEmail] = React.useState(user?.email || "");
-  const [saving, setSaving] = React.useState(false);
-  const [err, setErr] = React.useState("");
-
-  const submit = async (e) => {
-    e.preventDefault();
-    setErr("");
-    if (!name.trim() || !username.trim() || !email.trim()) {
-      setErr("Vui lòng nhập đủ họ tên / username / email");
-      return;
-    }
-    try {
-      setSaving(true);
-      const { data } = await axios.put("http://127.0.0.1:5000/api/profile", {
-        id: user.id, name: name.trim(), username: username.trim().toLowerCase(), email: email.trim().toLowerCase(),
-      });
-      onSaved?.(data.user);
-      onClose?.();
-    } catch (e) {
-      setErr(e?.response?.data?.error || "Lỗi cập nhật hồ sơ");
-    } finally { setSaving(false); }
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
-        <div className="px-6 py-4 border-b flex items-center justify-between">
-          <h3 className="font-bold text-lg">Hồ sơ cá nhân</h3>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">✕</button>
-        </div>
-        <form onSubmit={submit} className="p-6 space-y-4">
-          {err && <div className="p-2 text-sm rounded bg-red-50 text-red-700 border">{err}</div>}
-          <div>
-            <label className="text-sm font-semibold">Họ và tên</label>
-            <input className="w-full mt-1 px-3 py-2 border rounded-lg" value={name} onChange={e=>setName(e.target.value)} />
-          </div>
-          <div>
-            <label className="text-sm font-semibold">Tên đăng nhập</label>
-            <input className="w-full mt-1 px-3 py-2 border rounded-lg" value={username} onChange={e=>setUsername(e.target.value)} />
-          </div>
-          <div>
-            <label className="text-sm font-semibold">Email</label>
-            <input type="email" className="w-full mt-1 px-3 py-2 border rounded-lg" value={email} onChange={e=>setEmail(e.target.value)} />
-          </div>
-          <div className="pt-2 flex justify-end gap-2">
-            <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg border">Hủy</button>
-            <button disabled={saving} className="px-4 py-2 rounded-lg bg-cyan-600 text-white hover:bg-cyan-700 disabled:opacity-50">
-              {saving ? "Đang lưu..." : "Lưu hồ sơ"}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-};
 
 const ChangePasswordModal = ({ user, onClose }) => {
   const [oldPw, setOldPw] = React.useState("");
@@ -2283,7 +2100,8 @@ const App = () => {
   const [selectedPlaceId, setSelectedPlaceId] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
-  const [isChatOpen, setIsChatOpen] = useState(false);
+const [showChangePw, setShowChangePw] = useState(false);
+const [isChatOpen, setIsChatOpen] = useState(false);
 
 const handleProfileSaved = (newUser) => {
   setAuthUser(newUser);
@@ -2353,18 +2171,25 @@ const handleRegisterSuccess = (data) => {
         onOpenLogin={() => setShowLogin(true)}
         onOpenRegister={() => setShowRegister(true)}
         onLogout={handleLogout}
+        setShowProfile={setShowProfile}         // 👈 thêm
+        setShowChangePw={setShowChangePw}
       />
 
       {/* Routes */}
       {currentPage === 'home' && (
         <HomePage setCurrentPage={setCurrentPage} setSelectedPlaceId={setSelectedPlaceId} />
       )}
-      {currentPage === 'explore' && <ExplorePage />}
+      {currentPage === 'explore' && (
+  <ExplorePage
+    setCurrentPage={setCurrentPage}
+    setSelectedPlaceId={setSelectedPlaceId}
+  />
+)}
+
       {currentPage === 'tools' && <ToolsMenu setCurrentPage={setCurrentPage} />}
       {currentPage === 'currency' && <CurrencyPage setCurrentPage={setCurrentPage} />}
       {currentPage === 'translate' && <TranslatePage setCurrentPage={setCurrentPage} />}
       {currentPage === 'cost' && <CostPage setCurrentPage={setCurrentPage} />}
-      {currentPage === 'directions' && <DirectionsPage setCurrentPage={setCurrentPage} />}
       {currentPage === 'map' && <MapPage />}
       {currentPage === 'details' && (
         <DestinationDetailPage placeId={selectedPlaceId} setCurrentPage={setCurrentPage} />
@@ -2374,15 +2199,16 @@ const handleRegisterSuccess = (data) => {
 
       {/* Chat button */}
       <button
-        onClick={() => setIsChatOpen(!isChatOpen)}
-        className="fixed bottom-6 right-6 bg-gradient-to-r from-cyan-500 to-blue-600 text-white w-16 h-16 rounded-full shadow-lg flex items-center justify-center z-50 hover:scale-110 transition-transform"
-      >
-        {isChatOpen ? <X className="w-8 h-8" /> : <MessageSquare className="w-8 h-8" />}
-      </button>
-      {isChatOpen && (
-        <div className="fixed bottom-24 right-6 z-40 shadow-2xl rounded-lg overflow-hidden">
-          <ChatBox />
-        </div>
+  onClick={() => setIsChatOpen((v) => !v)}   // ✅ dùng state vừa khai báo
+  className="fixed bottom-6 right-6 bg-gradient-to-r from-cyan-500 to-blue-600 text-white w-16 h-16 rounded-full shadow-lg flex items-center justify-center z-50 hover:scale-110 transition-transform"
+>
+  {isChatOpen ? <X className="w-8 h-8" /> : <MessageSquare className="w-8 h-8" />}
+</button>
+
+{isChatOpen && (                          // ✅ dùng state vừa khai báo
+  <div className="fixed bottom-24 right-6 z-40 shadow-2xl rounded-lg overflow-hidden">
+    <ChatBox />
+  </div>
       )}
 
       {/* Auth Modals */}
@@ -2406,9 +2232,9 @@ const handleRegisterSuccess = (data) => {
       )}
       {showProfile && authUser && (
   <ProfileModal
-    user={authUser}
+    authUser={authUser}
+    setAuthUser={(u) => { setAuthUser(u); localStorage.setItem('authUser', JSON.stringify(u)); }}
     onClose={() => setShowProfile(false)}
-    onSaved={(u) => { setAuthUser(u); localStorage.setItem('authUser', JSON.stringify(u)); }}
   />
 )}
 

@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from google import genai
 from dotenv import load_dotenv
+from flask import Flask, send_from_directory
 import os
 import pyodbc
 import re  # 👈 THÊM MỚI: Để xử lý JSON từ AI
@@ -9,10 +10,12 @@ import json # 👈 THÊM MỚI: Để xử lý JSON từ AI
 from auth import auth_bp   # 👈 import blueprint từ file trên
 from werkzeug.security import generate_password_hash, check_password_hash
 
+
 # Load biến môi trường
 load_dotenv()
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='Images', static_url_path='/Images')
+
 app.register_blueprint(auth_bp)  # gắn /api/login, /api/register
 
 # Đã xử lý CORS
@@ -200,7 +203,7 @@ def ai_search_places():
         # Xử lý thumbnail None
         for place in suggested_places:
             if place.get('thumbnail') is None:
-                place['thumbnail'] = '[https://via.placeholder.com/300x200?text=No+Image](https://via.placeholder.com/300x200?text=No+Image)'
+                    place['thumbnail'] = 'https://via.placeholder.com/300x200?text=No+Image'
 
         return jsonify(suggested_places)
 
@@ -256,10 +259,10 @@ def get_top_rated_places():
             "id": place['id'],
             "name": place['name'],
             "description": place['description'],
-            "image": place['image'] or '[https://via.placeholder.com/300x200?text=No+Image](https://via.placeholder.com/300x200?text=No+Image)',
+            "image": place['image'] or 'https://via.placeholder.com/300x200?text=No+Image',
             "rating": round(rating_val, 1),
             "category": place['category'],
-            "vr360": '[https://upload.wikimedia.org/wikipedia/commons/f/f0/Halong_Bay_Vietnam_360_main_cav.jpg](https://upload.wikimedia.org/wikipedia/commons/f/f0/Halong_Bay_Vietnam_360_main_cav.jpg)'
+            "vr360": 'https://upload.wikimedia.org/wikipedia/commons/f/f0/Halong_Bay_Vietnam_360_main_cav.jpg'
         })
     return jsonify(formatted_places)
 
@@ -293,7 +296,7 @@ def get_related_places():
     places = query_db(query)
     for place in places:
         if place.get('thumbnail') is None:
-            place['thumbnail'] = '[https://via.placeholder.com/300x200?text=No+Image](https://via.placeholder.com/300x200?text=No+Image)'
+            place['thumbnail'] = 'https://via.placeholder.com/300x200?text=No+Image'
     return jsonify(places)
 
 # Helper insert trả về ID mới

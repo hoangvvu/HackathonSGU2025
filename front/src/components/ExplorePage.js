@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Search, Star, Camera, X, Play } from 'lucide-react';
 import 'aframe'; // Import A-Frame cho VR
-
+import { toImg } from "../utils/media.js";
 // Component thẻ địa điểm
 const DestinationCard = ({ destination, setCurrentPage, setSelectedPlaceId }) => {
   const [showVR, setShowVR] = useState(false);
@@ -11,8 +11,10 @@ const DestinationCard = ({ destination, setCurrentPage, setSelectedPlaceId }) =>
 
   // *** THÊM MỚI: Hàm xử lý khi click vào thẻ để xem chi tiết ***
   const handleViewDetails = () => {
-    setSelectedPlaceId(destination.id); // Set ID của địa điểm
-    setCurrentPage('details');          // Chuyển sang trang 'details'
+      const id = destination.id; // ✅ Thêm dòng này
+  if (typeof setSelectedPlaceId === 'function') setSelectedPlaceId(id);
+  if (typeof setCurrentPage === 'function') setCurrentPage('details');
+  else window.location.href = `?place=${id}`; // fallback
   };
 
   const loadAIDescription = async () => {
@@ -41,11 +43,12 @@ const DestinationCard = ({ destination, setCurrentPage, setSelectedPlaceId }) =>
     <div className="bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition">
       {/* *** CẬP NHẬT: Thêm onClick và cursor-pointer *** */}
       <img 
-        src={destination.image} 
-        alt={destination.name} 
-        className="w-full h-48 object-cover cursor-pointer"
-        onClick={handleViewDetails} 
-      />
+  src={toImg(destination.image)}
+  alt={destination.name}
+  className="w-full h-48 object-cover cursor-pointer"
+  onClick={handleViewDetails}
+/>
+
       
       <div className="p-6">
         <div className="flex justify-between items-start mb-2">
@@ -80,7 +83,7 @@ const DestinationCard = ({ destination, setCurrentPage, setSelectedPlaceId }) =>
             disabled={loadingDesc}
             className="w-full bg-purple-500 text-white py-2 rounded-lg hover:bg-purple-600 transition text-sm disabled:opacity-50"
           >
-            {loadingDesc ? '🤖 Đang tải...' : '🎙️ Thuyết minh AI'}
+            {loadingDesc ? 'Đang tải...' : 'Giới thiệu bằng AI'}
           </button>
         </div>
 
@@ -108,7 +111,7 @@ const DestinationCard = ({ destination, setCurrentPage, setSelectedPlaceId }) =>
         {aiDescription && (
           <div className="mt-4 p-4 bg-purple-50 rounded-lg">
             <div className="flex justify-between items-start mb-2">
-              <p className="text-sm font-semibold text-purple-700">Thuyết minh AI</p>
+              <p className="text-sm font-semibold text-purple-700">Giới thiệu</p>
               <div className="flex gap-2">
                 <button
                   onClick={() => speakDescription(aiDescription, 'vi-VN')}
@@ -186,35 +189,19 @@ const ExplorePage = ({ setCurrentPage, setSelectedPlaceId }) => {
   return (
     <div className="pt-24 pb-12 min-h-screen bg-gray-50">
       <div className="container mx-auto px-4">
-        <h1 className="text-4xl font-bold mb-4 text-gray-800">🗺️ Khám phá điểm đến (Top Rate)</h1>
-        <p className="text-gray-600 mb-8">Danh sách các điểm đến được đánh giá cao nhất từ cơ sở dữ liệu</p>
-
-        {/* Search */}
-        <div className="bg-white rounded-xl shadow-lg p-4 mb-8">
-          <div className="relative">
-            <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Tìm kiếm trong các điểm đến top..."
-              className="w-full pl-10 pr-4 py-3 border rounded-lg outline-none focus:ring-2 focus:ring-cyan-500"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
-        </div>
+        <h1 className="text-4xl font-bold mb-4 text-gray-800">Khám phá điểm đến (Top Rate)</h1>
 
         {loading ? (
           <div className="text-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-cyan-500 mx-auto"></div>
-            <p className="text-gray-600 mt-4">💾 Đang tải dữ liệu từ Database...</p>
+            <p className="text-gray-600 mt-4">💾 Đang tải dữ liệu...</p>
           </div>
         ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredDests.map((dest) => (
-              // *** CẬP NHẬT: Truyền props 'setCurrentPage' và 'setSelectedPlaceId' xuống Card ***
-              <DestinationCard 
-                key={dest.id} 
-                destination={dest} 
+          <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6 place-items-center">
+            {destinations.map((destination) => (
+              <DestinationCard
+                key={destination.id}
+                destination={destination}
                 setCurrentPage={setCurrentPage}
                 setSelectedPlaceId={setSelectedPlaceId}
               />

@@ -138,3 +138,93 @@ def check_auth():
     """API kiểm tra trạng thái đăng nhập (optional)"""
     # Có thể implement JWT token validation ở đây
     return jsonify({'authenticated': False}), 200
+
+@auth_bp.route('/api/me', methods=['PUT'])
+def update_profile():
+    """Cập nhật thông tin cá nhân"""
+    try:
+        data = request.get_json()
+        user_id = data.get('id')
+        name = data.get('name', '').strip()
+        username = data.get('username', '').strip()
+        email = data.get('email', '').strip()
+
+        if not all([user_id, name, username, email]):
+            return jsonify({'error': 'Thiếu thông tin bắt buộc'}), 400
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # Kiểm tra username hoặc email đã tồn tại chưa (ngoại trừ chính mình)
+        cursor.execute("""
+            SELECT id FROM Users 
+            WHERE (username = ? OR email = ?) AND id <> ?
+        """, (username, email, user_id))
+        if cursor.fetchone():
+            conn.close()
+            return jsonify({'error': 'Tên đăng nhập hoặc email đã được sử dụng'}), 400
+
+        # Cập nhật thông tin
+        cursor.execute("""
+            UPDATE Users SET name = ?, username = ?, email = ? 
+            WHERE id = ?
+        """, (name, username, email, user_id))
+        conn.commit()
+
+        # Trả lại thông tin user sau khi cập nhật
+        cursor.execute("SELECT id, name, username, email, role, created_at FROM Users WHERE id = ?", (user_id,))
+        u = cursor.fetchone()
+        conn.close()
+
+        user = {
+            'id': u[0],
+            'name': u[1],
+            'username': u[2],
+            'email': u[3],
+            'role': u[4],
+            'created_at': str(u[5])
+        }
+
+        return jsonify({'message': 'Cập nhật thành công', 'user': user}), 200
+
+    except Exception as e:
+        print("Lỗi update profile:", e)
+        return jsonify({'error': 'Không thể cập nhật thông tin'}), 500
+
+@auth_bp.route('/api/change-password', methods=['POST'])
+def change_password():
+    """Đổi mật khẩu người dùng"""
+    try:
+        data = request.get_json()
+        user_id = data.get('id')
+        current_pw = data.get('current_password', '')
+        new_pw = data.get('new_password', '')
+
+        if not all([user_id, current_pw, new_pw]):
+            return jsonify({'error': 'Thiếu thông tin'}), 400
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        # Lấy mật khẩu cũ
+        cursor.execute("SELECT password FROM Users WHERE id = ?", (user_id,))
+        row = cursor.fetchone()
+        if not row:
+            conn.close()
+            return jsonify({'error': 'Không tìm thấy người dùng'}), 404
+
+        hashed_old = hash_password(current_pw)
+        if hashed_old != row[0]:
+            conn.close()
+            return jsonify({'error': 'Mật khẩu hiện tại không đúng'}), 401
+
+        hashed_new = hash_password(new_pw)
+        cursor.execute("UPDATE Users SET password = ? WHERE id = ?", (hashed_new, user_id))
+        conn.commit()
+        conn.close()
+
+        return jsonify({'message': 'Đổi mật khẩu thành công'}), 200
+
+    except Exception as e:
+        print("Lỗi đổi mật khẩu:", e)
+        return jsonify({'error': 'Không thể đổi mật khẩu'}), 500
